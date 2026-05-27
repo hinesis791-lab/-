@@ -824,8 +824,8 @@ function settleMonth(ym){
 
   for(const m of MEMBERS){
     const h=md[m]||0;
-    const excess=Math.max(0,h-avg);
-    data.hours[m]=Math.max(0,(data.hours[m]||0)+(excess-h));
+    const excess=Math.max(0,Math.round(h-avg));
+    data.hours[m]=Math.max(0,Math.round((data.hours[m]||0)+(excess-h)));
   }
   data.settledMonths.push(ym);
   save(data);
