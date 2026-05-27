@@ -171,7 +171,7 @@ tr.grp-sep td{border-top:2px solid #dce5f0}
       <button class="btn btn-gen" onclick="generate()">▶ 업무대행표 생성</button>
     </div>
     <div class="card">
-      <div class="card-title"><span class="ctbar"></span>팀원 누적 현황</div>
+      <div class="card-title"><span class="ctbar"></span>팀원 이번달 현황</div>
       <div id="teamChips" class="team-chips"></div>
     </div>
   </div>
@@ -468,8 +468,8 @@ function renderCumulative(hours,sessHours,history,settled){
     </div>`;
   }
 
-  return`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-    <span style="font-size:13px;font-weight:700;color:#5a6a7e">누적 대행 시간 (적은 순)</span>
+  return`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+    <div><span style="font-size:13px;font-weight:700;color:#5a6a7e">이번달 누적 대행 시간 (적은 순)</span><div style="font-size:10px;color:#94a3b8;margin-top:2px">월 변경 시 자동 초기화 · 이전 달은 아래 월별 현황 참조</div></div>
     <button class="btn btn-excel" onclick="downloadExcel()">📥 엑셀 다운로드</button>
   </div>
   <div class="stat-row">
@@ -537,6 +537,22 @@ function generate(){
   }
   if(!absences.length){alert('최소 1명의 휴가자와 휴가 종류를 선택해주세요.');return;}
   const data=load();
+
+  // 월 변경 감지 → 이번달 누적 자동 초기화 (이전 월 데이터는 history에 유지)
+  const newMonth=date.slice(0,7);
+  if(data.currentMonth&&data.currentMonth<newMonth){
+    const wasSettled=(data.settledMonths||[]).includes(data.currentMonth);
+    data.hours=wasSettled
+      ?data.hours  // 정산 완료 월: 초과분만 이월
+      :Object.fromEntries(MEMBERS.map(m=>[m,0]));  // 미정산: 완전 초기화
+    data.currentMonth=newMonth;
+    save(data);
+    showToast(`${parseInt(newMonth.slice(5,7))}월 시작 — 누적 ${wasSettled?'정산 결과 이월':'초기화'}됨`);
+  }else if(!data.currentMonth){
+    data.currentMonth=newMonth;
+    save(data);
+  }
+
   const ei=data.history.findIndex(h=>h.date===date);
   if(ei!==-1){
     if(!confirm(`${fmtDate(date)}의 대행표가 이미 존재합니다. 교체하시겠습니까?`))return;
