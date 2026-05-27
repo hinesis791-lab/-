@@ -401,7 +401,8 @@ function buildMonthlyData(history){
   return months;
 }
 
-function renderCumulative(hours,sessHours,history){
+function renderCumulative(hours,sessHours,history,settled){
+  if(!settled)settled=[];
   const vals=MEMBERS.map(m=>hours[m]||0);
   const maxH=Math.max(...vals,1);
   const maxM=MEMBERS[vals.indexOf(Math.max(...vals))];
@@ -418,20 +419,48 @@ function renderCumulative(hours,sessHours,history){
     return`<div class="${cls}"><div class="mc-name">${m}</div><div><span class="mc-hours">${h}</span><span class="mc-unit">시간</span></div>${nh>0?`<div class="mc-new">+${nh}h 추가</div>`:''}<div class="hbar"><div class="hbar-f" style="width:${pct}%"></div></div></div>`;
   }).join('');
 
-  // 월별 현황 테이블
+  // 월별 현황 테이블 + 정산
   const mdata=buildMonthlyData(history||[]);
   const mkeys=Object.keys(mdata).sort().reverse();
   let monthly='';
   if(mkeys.length>0){
-    const hdr=mkeys.map(ym=>{const[y,m]=ym.split('-');return`<th style="text-align:center;white-space:nowrap">${y}년 ${parseInt(m)}월</th>`;}).join('');
+    // 월별 평균 사전 계산
+    const mavg={};
+    mkeys.forEach(ym=>{
+      const t=MEMBERS.reduce((s,m)=>s+(mdata[ym][m]||0),0);
+      mavg[ym]=t/MEMBERS.length;
+    });
+
+    const hdr=mkeys.map(ym=>{
+      const[y,m]=ym.split('-');
+      const isSettled=settled.includes(ym);
+      const badge=isSettled
+        ?`<span style="display:inline-block;margin-top:3px;font-size:10px;color:#16a34a;font-weight:700">✅ 정산완료</span>`
+        :`<button onclick="settleMonth('${ym}')" style="display:inline-block;margin-top:3px;font-size:10px;padding:1px 6px;border:1.5px solid #f59e0b;background:#fffbeb;color:#92400e;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700">⚖️ 정산</button>`;
+      return`<th style="text-align:center;white-space:nowrap">${y}년 ${parseInt(m)}월<br><span style="font-size:10px;font-weight:400;opacity:.8">평균 ${mavg[ym].toFixed(1)}h</span><br>${badge}</th>`;
+    }).join('');
+
     const rows=sorted.map(member=>{
-      const cells=mkeys.map(ym=>{const h=mdata[ym][member]||0;return`<td style="text-align:center;color:${h>0?'#1e3a5f':'#cbd5e1'}">${h>0?`<strong>${h}h</strong>`:'-'}</td>`;}).join('');
+      const cells=mkeys.map(ym=>{
+        const h=mdata[ym][member]||0;
+        const excess=h-mavg[ym];
+        const isAbove=excess>0.05;
+        const color=h===0?'#cbd5e1':(isAbove?'#c2410c':'#1e3a5f');
+        const exTag=isAbove?`<br><span style="font-size:10px;color:#dc2626">+${excess.toFixed(1)}h</span>`:'';
+        return`<td style="text-align:center;color:${color}">${h>0?`<strong>${h}h</strong>${exTag}`:'-'}</td>`;
+      }).join('');
       return`<tr><td><strong>${member}</strong></td>${cells}<td style="text-align:center;font-weight:800;color:#2e86c1">${hours[member]||0}h</td></tr>`;
     }).join('');
-    const totCells=mkeys.map(ym=>{const t=MEMBERS.reduce((s,m)=>s+(mdata[ym][m]||0),0);return`<td style="text-align:center;font-weight:700;color:#374151;background:#f0f4f8">${t}h</td>`;}).join('');
+
+    const totCells=mkeys.map(ym=>{
+      const t=MEMBERS.reduce((s,m)=>s+(mdata[ym][m]||0),0);
+      return`<td style="text-align:center;font-weight:700;color:#374151;background:#f0f4f8">${t}h</td>`;
+    }).join('');
     const grand=MEMBERS.reduce((s,m)=>s+(hours[m]||0),0);
+
     monthly=`<div style="margin-top:22px;padding-top:18px;border-top:2px solid #eef2f7">
-      <div style="font-size:13px;font-weight:700;color:#1e3a5f;margin-bottom:10px;display:flex;align-items:center;gap:6px"><span class="ctbar"></span>월별 대행 시간 현황</div>
+      <div style="font-size:13px;font-weight:700;color:#1e3a5f;margin-bottom:6px;display:flex;align-items:center;gap:6px"><span class="ctbar"></span>월별 대행 시간 현황</div>
+      <div style="font-size:11px;color:#7c8fa4;margin-bottom:10px">⚖️ <strong>정산</strong>: 월 평균 초과분만 다음달 누적에 반영 — 평균 이하는 0으로 리셋</div>
       <div class="tw"><table>
         <thead><tr><th>이름</th>${hdr}<th style="text-align:center;background:#2e5a8e">합계</th></tr></thead>
         <tbody>${rows}<tr><td style="font-weight:700;color:#5a6a7e;background:#f0f4f8">월 합계</td>${totCells}<td style="text-align:center;font-weight:800;color:#1e3a5f;background:#e0e8f4">${grand}h</td></tr></tbody>
@@ -520,7 +549,7 @@ function generate(){
   data.history.push({id:`${date}-${Date.now()}`,date,absences,assignments:result});
   save(data);
   document.getElementById('covContent').innerHTML=renderCoverage(date,absences,result);
-  document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,sess,data.history);
+  document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,sess,data.history,data.settledMonths||[]);
   document.getElementById('histContent').innerHTML=renderHistory(data.history);
   renderTeamChips(data.hours,sess);
   showTab('cov');
@@ -549,7 +578,7 @@ function delHist(id){
   for(const m of MEMBERS)data.hours[m]=Math.max(0,(data.hours[m]||0)-(os[m]||0));
   data.history.splice(idx,1);save(data);
   document.getElementById('histContent').innerHTML=renderHistory(data.history);
-  document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,null,data.history);
+  document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,null,data.history,data.settledMonths||[]);
   renderTeamChips(data.hours,null);
 }
 
@@ -594,7 +623,7 @@ function saveEdit(){
   data.history[idx]={...data.history[idx],absences:newAb,assignments:result};
   save(data);
   document.getElementById('covContent').innerHTML=renderCoverage(data.history[idx].date,newAb,result);
-  document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,sess,data.history);
+  document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,sess,data.history,data.settledMonths||[]);
   document.getElementById('histContent').innerHTML=renderHistory(data.history);
   renderTeamChips(data.hours,sess);
   closeEditModal();showTab('hist');showToast('수정이 완료되었습니다.');
@@ -746,6 +775,49 @@ async function importFromURL(){
 }
 
 // ── Excel ─────────────────────────────────────────────
+// ── 월 정산 ───────────────────────────────────────────
+function settleMonth(ym){
+  const data=load();
+  if(!data.settledMonths)data.settledMonths=[];
+  if(data.settledMonths.includes(ym)){showToast('이미 정산된 월입니다.');return;}
+
+  const mdata=buildMonthlyData(data.history);
+  const md=mdata[ym];
+  if(!md)return;
+
+  const[y,mo]=ym.split('-');
+  const total=MEMBERS.reduce((s,m)=>s+(md[m]||0),0);
+  const avg=total/MEMBERS.length;
+
+  // 정산 미리보기: 평균 초과자만 표시
+  const over=MEMBERS.filter(m=>(md[m]||0)>avg+0.05).map(m=>`  ${m}: ${md[m]}h → 초과 ${(md[m]-avg).toFixed(1)}h만 유지`);
+  const under=MEMBERS.filter(m=>(md[m]||0)>0&&(md[m]||0)<=avg+0.05).map(m=>`  ${m}: ${md[m]}h → 0h (평균 이하 리셋)`);
+  const msg=[
+    `${y}년 ${parseInt(mo)}월 정산`,
+    `월 평균: ${avg.toFixed(1)}h`,
+    '',
+    over.length?'▶ 평균 초과 (초과분 반영):':'',
+    ...over,
+    under.length?'▶ 평균 이하 (0으로 리셋):':'',
+    ...under,
+    '',
+    '정산하시겠습니까?'
+  ].filter(l=>l!==undefined).join('\n');
+
+  if(!confirm(msg))return;
+
+  for(const m of MEMBERS){
+    const h=md[m]||0;
+    const excess=Math.max(0,h-avg);
+    data.hours[m]=Math.max(0,(data.hours[m]||0)+(excess-h));
+  }
+  data.settledMonths.push(ym);
+  save(data);
+  document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,null,data.history,data.settledMonths);
+  renderTeamChips(data.hours,null);
+  showToast(`${y}년 ${parseInt(mo)}월 정산 완료!`);
+}
+
 function downloadExcel(){
   const data=load();
   const BOM='﻿';
@@ -798,7 +870,7 @@ function showToast(msg){
 
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeEditModal();closeShareModal();}});
 
-  document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,null,data.history);
+  document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,null,data.history,data.settledMonths||[]);
   document.getElementById('histContent').innerHTML=renderHistory(data.history);
   renderTeamChips(data.hours,null);
 })();
