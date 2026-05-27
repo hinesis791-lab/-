@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>영업팀 업무대행표</title>
+<title>JK기업영업2팀 업무(자동누적)대행표</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Malgun Gothic','맑은 고딕',-apple-system,sans-serif;background:#eef2f7;color:#2c3e50;min-height:100vh;font-size:14px}
@@ -124,7 +124,7 @@ tr.grp-sep td{border-top:2px solid #dce5f0}
 <body>
 
 <header class="app-header">
-  <div><h1>영업팀 업무대행표</h1><p>11명 팀원 · 최대 4명 동시 휴가 · 연속 시간 블록 배정</p></div>
+  <div><h1>JK기업영업2팀 업무(자동누적)대행표</h1><p>11명 팀원 · 최대 4명 동시 휴가 · 연속 시간 블록 배정</p></div>
   <div class="header-btns">
     <button class="btn btn-share" onclick="openShareModal()">🔗 공유 링크</button>
     <button class="btn btn-hdr" onclick="window.print()">🖨 인쇄</button>
@@ -729,7 +729,7 @@ function copyHistEntry(id){
     const sa=startSlotOf(a),sb=startSlotOf(b);
     return sa!==sb?sa-sb:entry.absences.findIndex(x=>x.name===a.absentee)-entry.absences.findIndex(x=>x.name===b.absentee);
   });
-  let text=`📋 영업팀 업무대행표 - ${fmtDate(entry.date)}\n`;
+  let text=`📋 JK기업영업2팀 업무(자동누적)대행표 - ${fmtDate(entry.date)}\n`;
   text+=`휴가자: ${entry.absences.map(a=>`${a.name}(${a.leaveType})`).join(', ')}\n\n`;
   text+=`시간대\t\t\t휴가자\t\t대행자\n`;
   text+=`${'─'.repeat(36)}\n`;
