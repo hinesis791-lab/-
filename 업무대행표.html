@@ -569,14 +569,15 @@ function rerenderCum(data,sess){
   const curYM=`${_cy}-${String(_cm+1).padStart(2,'0')}`;
   const monthH=(buildMonthlyData(data.history||[]))[curYM]||{};
   const mTotal=MEMBERS.reduce((s,m)=>s+(monthH[m]||0),0);
+  const carryMap=(data.settleAdjustments||{})[curYM]||{};
   let devMap;
   if(mTotal>0){
-    // 월 실적 있으면 평균 편차
+    // 이월값 + 이번달 편차
     const mAvg=mTotal/MEMBERS.length;
-    devMap=Object.fromEntries(MEMBERS.map(m=>[m,Math.round((monthH[m]||0)-mAvg)]));
+    devMap=Object.fromEntries(MEMBERS.map(m=>[m,Math.round((monthH[m]||0)-mAvg)+(carryMap[m]??0)]));
   }else{
-    // 월 실적 없으면 이전달 정산 이월값 폴백
-    devMap=(data.settleAdjustments||{})[curYM]||{};
+    // 이번달 실적 없으면 이월값만
+    devMap=carryMap;
   }
   document.getElementById('cumContent').innerHTML=renderCumulative(monthH,sess,data.history,data.settledMonths||[],devMap,data.hours);
 }
@@ -616,8 +617,9 @@ function renderTeamChips(sessHours){
   const settleAdj=(d.settleAdjustments||{})[curYM]||{};
   document.getElementById('teamChips').innerHTML=MEMBERS.map(m=>{
     const h=mh[m]||0,nh=sessHours?(sessHours[m]||0):0;
-    // 월 실적 있으면 평균 편차, 없으면 이전달 정산 이월값
-    const val=hasData?Math.round(h-monthAvg):(settleAdj[m]??0);
+    // 이월값 + 이번달 편차 (이월값은 항상 합산)
+    const carry=settleAdj[m]??0;
+    const val=carry+(hasData?Math.round(h-monthAvg):0);
     const badge=val!==0
       ?`<span style="font-size:9px;font-weight:700;${val>0?'color:#059669;background:#d1fae5':'color:#dc2626;background:#fee2e2'};border-radius:10px;padding:1px 6px;margin-left:3px;white-space:nowrap">${val>0?'+':''}${val}h</span>`
       :'';
