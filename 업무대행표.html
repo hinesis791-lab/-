@@ -861,21 +861,20 @@ function renderFamilyDay(){
   const entries=loadFD();
   const today=new Date();
   const todayStr=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-  const memberOpts=MEMBERS.map(m=>`<option value="${m}">${m}</option>`).join('');
 
   const histHtml=entries.length===0
     ?`<div class="empty"><p>Family Day 이력이 없습니다</p><small>위에서 날짜와 배정을 입력 후 저장하세요</small></div>`
     :[...entries].sort((a,b)=>b.date.localeCompare(a.date)).map(e=>{
       const rowsHtml=e.rows.map(r=>`<tr><td><strong>${r.absentee}</strong></td><td><strong style="color:#1e3a5f">${r.coverage||'미배정'}</strong></td></tr>`).join('');
-      return`<div class="hist-entry" id="fde-${e.id}">
-        <div class="hist-hdr" onclick="toggleFDHist('${e.id}')">
+      return`<div class="hist-entry" style="margin-bottom:10px">
+        <div class="hist-hdr" style="cursor:default">
           <div><div class="hist-date">${fmtDate(e.date)}</div><div class="hist-meta">Family Day · ${e.rows.length}명 배정</div></div>
           <div class="hist-acts">
-            <button class="btn btn-del" onclick="event.stopPropagation();delFDEntry('${e.id}')">🗑 삭제</button>
-            <span class="hist-chev">▼</span>
+            <button class="btn btn-edit" onclick="editFDEntry('${e.id}')">✏️ 수정</button>
+            <button class="btn btn-del" onclick="delFDEntry('${e.id}')">🗑 삭제</button>
           </div>
         </div>
-        <div class="hist-body" id="fdb-${e.id}">
+        <div class="hist-body open">
           <div class="tw"><table><thead><tr><th>Family Day 참가자</th><th>업무대행자</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>
         </div>
       </div>`;
@@ -884,6 +883,8 @@ function renderFamilyDay(){
   document.getElementById('fdContent').innerHTML=`
     <div style="margin-bottom:18px">
       <div style="font-size:13px;font-weight:700;color:#1e3a5f;margin-bottom:12px;display:flex;align-items:center;gap:6px"><span class="ctbar"></span>Family Day 배정 추가</div>
+      <input type="hidden" id="fdEditId">
+      <div id="fdEditBanner" style="display:none;background:#fffbeb;border:1.5px solid #fde68a;border-radius:8px;padding:8px 12px;font-size:12px;color:#92400e;margin-bottom:10px">✏️ <strong>수정 중</strong> — 변경 후 저장 버튼을 누르세요. <button onclick="cancelFDEdit()" style="margin-left:8px;font-size:11px;padding:2px 8px;border:1.5px solid #fde68a;background:white;color:#92400e;border-radius:5px;cursor:pointer;font-family:inherit">취소</button></div>
       <div class="form-group" style="max-width:220px"><label>날짜</label><input type="date" id="fdDate" value="${todayStr}"></div>
       <div style="margin-bottom:10px">
         <div style="font-size:11px;font-weight:700;color:#5a6a7e;margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px">배정 목록</div>
@@ -925,25 +926,48 @@ function saveFDEntry(){
   });
   if(!rows.length){showToast('배정 행을 1개 이상 추가해주세요.');return;}
   const entries=loadFD();
-  entries.push({id:`fd-${date}-${Date.now()}`,date,rows});
-  saveFD(entries);
-  showToast('Family Day 배정이 저장되었습니다.');
+  const editId=document.getElementById('fdEditId').value;
+  if(editId){
+    const idx=entries.findIndex(e=>e.id===editId);
+    if(idx!==-1)entries[idx]={...entries[idx],date,rows};
+    saveFD(entries);
+    showToast('Family Day 배정이 수정되었습니다.');
+  }else{
+    entries.push({id:`fd-${date}-${Date.now()}`,date,rows});
+    saveFD(entries);
+    showToast('Family Day 배정이 저장되었습니다.');
+  }
   renderFamilyDay();
 }
+
+function editFDEntry(id){
+  const entry=loadFD().find(e=>e.id===id);
+  if(!entry)return;
+  const memberOpts=MEMBERS.map(m=>`<option value="${m}">${m}</option>`).join('');
+  document.getElementById('fdEditId').value=id;
+  document.getElementById('fdEditBanner').style.display='block';
+  document.getElementById('fdDate').value=entry.date;
+  const tbody=document.getElementById('fdRows');
+  tbody.innerHTML='';
+  for(const r of entry.rows){
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><select><option value="">선택</option>${memberOpts}</select></td>
+      <td><select><option value="">선택</option>${memberOpts}</select></td>
+      <td style="text-align:center"><button onclick="this.closest('tr').remove()" class="btn btn-del" style="padding:3px 8px;font-size:11px">✕</button></td>`;
+    const sels=tr.querySelectorAll('select');
+    sels[0].value=r.absentee;sels[1].value=r.coverage||'';
+    tbody.appendChild(tr);
+  }
+  document.getElementById('fdContent').scrollIntoView({behavior:'smooth',block:'start'});
+  showToast('수정 모드 — 변경 후 저장하세요.');
+}
+
+function cancelFDEdit(){renderFamilyDay();}
 
 function delFDEntry(id){
   if(!confirm('이 Family Day 이력을 삭제하시겠습니까?'))return;
   saveFD(loadFD().filter(e=>e.id!==id));
   renderFamilyDay();
-}
-
-function toggleFDHist(id){
-  const body=document.getElementById('fdb-'+id),entry=document.getElementById('fde-'+id);
-  if(!body||!entry)return;
-  const open=body.classList.contains('open');
-  document.querySelectorAll('[id^="fdb-"]').forEach(b=>b.classList.remove('open'));
-  document.querySelectorAll('[id^="fde-"]').forEach(e=>e.classList.remove('open'));
-  if(!open){body.classList.add('open');entry.classList.add('open');}
 }
 
 // ── Toast ─────────────────────────────────────────────
