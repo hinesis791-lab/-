@@ -456,7 +456,7 @@ function renderCoverage(date,absences,assignments){
   const summ={};
   for(const a of assignments){const h=a.hours??a.slots?.length??1;summ[a.assignee]=(summ[a.assignee]||0)+h;}
   const summChips=Object.entries(summ).map(([n,h])=>`<span class="s-chip">${n} <span style="color:#2e86c1">+${h}h</span></span>`).join('');
-  return`<div class="banner"><div><div class="banner-date">${fmtDate(date)}</div><div class="banner-sub">업무대행 일정</div></div><div class="chips">${absences.map(a=>`<span class="chip">${a.name}·${a.leaveType}</span><button class="chip-copy" onclick="copyChipSlack('${a.name}')">📋 복사</button><a href="http://isup.jobkorea.co.kr/isjk/agentConfig.do" target="_blank" class="chip-chak">📞 착신</a>`).join('')}</div></div>
+  return`<div class="banner"><div><div class="banner-date">${fmtDate(date)}</div><div class="banner-sub">업무대행 일정</div></div><div class="chips">${absences.map(a=>`<span class="chip">${a.name}·${a.leaveType}</span><button class="chip-copy" onclick="copyChipSlack('${a.name}')">📋 복사</button><button class="chip-copy" onclick="delCovAbsentee('${a.name}')">🗑 삭제</button>`).join('')}<button class="chip-copy" onclick="editCovEntry()">✏️ 수정</button><a href="http://isup.jobkorea.co.kr/isjk/agentConfig.do" target="_blank" class="chip-chak">📞 착신</a></div></div>
   <div class="tw"><table><thead><tr><th style="width:160px">시간대 (연속 블록)</th><th>휴가자</th><th>휴가 종류</th><th>대행자</th></tr></thead><tbody>${buildRows(assignments)}</tbody></table></div>
   <div class="summary-box"><h4>이번 배정 요약</h4><div class="summary-chips">${summChips}</div></div>`;
 }
@@ -636,9 +636,10 @@ function generate(){
   }
   const{result,sess}=calcCoverage(absences,data.hours);
   for(const m of MEMBERS)data.hours[m]=(data.hours[m]||0)+(sess[m]||0);
-  data.history.push({id:`${date}-${Date.now()}`,date,absences,assignments:result});
+  const newId=`${date}-${Date.now()}`;
+  data.history.push({id:newId,date,absences,assignments:result});
   save(data);
-  _lastCov={date,absences,assignments:result};
+  _lastCov={date,absences,assignments:result,histId:newId};
   document.getElementById('covContent').innerHTML=renderCoverage(date,absences,result);
   document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,sess,data.history,data.settledMonths||[]);
   document.getElementById('histContent').innerHTML=renderHistory(data.history);
@@ -714,7 +715,7 @@ function saveEdit(){
   for(const m of MEMBERS)data.hours[m]=(data.hours[m]||0)+(sess[m]||0);
   data.history[idx]={...data.history[idx],absences:newAb,assignments:result};
   save(data);
-  _lastCov={date:data.history[idx].date,absences:newAb,assignments:result};
+  _lastCov={date:data.history[idx].date,absences:newAb,assignments:result,histId:data.history[idx].id};
   document.getElementById('covContent').innerHTML=renderCoverage(data.history[idx].date,newAb,result);
   document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,sess,data.history,data.settledMonths||[]);
   document.getElementById('histContent').innerHTML=renderHistory(data.history);
@@ -814,6 +815,39 @@ function copyHistEntry(id){
   const ok=()=>showToast('슬랙 공유용 텍스트가 복사되었습니다!');
   const fb=()=>{const el=document.createElement('textarea');el.value=text;document.body.appendChild(el);el.select();try{document.execCommand('copy');ok();}catch(e){showToast('복사 실패.');}document.body.removeChild(el);};
   navigator.clipboard?navigator.clipboard.writeText(text).then(ok).catch(fb):fb();
+}
+
+function editCovEntry(){
+  if(!_lastCov||!_lastCov.histId){showToast('대행표를 먼저 생성해주세요.');return;}
+  editHist(_lastCov.histId);
+}
+
+function delCovAbsentee(name){
+  if(!_lastCov||!_lastCov.histId){showToast('대행표를 먼저 생성해주세요.');return;}
+  if(!confirm(`${name}의 휴가를 삭제하시겠습니까?\n대행표가 재계산됩니다.`))return;
+  const data=load();
+  const idx=data.history.findIndex(h=>h.id===_lastCov.histId);
+  if(idx===-1)return;
+  const entry=data.history[idx];
+  const os=sessFromAssignments(entry.assignments);
+  for(const m of MEMBERS)data.hours[m]=Math.max(0,(data.hours[m]||0)-(os[m]||0));
+  const newAb=entry.absences.filter(a=>a.name!==name);
+  if(!newAb.length){
+    data.history.splice(idx,1);save(data);
+    document.getElementById('covContent').innerHTML=`<div class="empty"><svg width="56" height="56" viewBox="0 0 56 56" fill="none" style="opacity:.3;margin-bottom:10px"><rect x="9" y="7" width="38" height="42" rx="4" stroke="#94a3b8" stroke-width="2.5"/><line x1="17" y1="19" x2="39" y2="19" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/><line x1="17" y1="27" x2="39" y2="27" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/><line x1="17" y1="35" x2="30" y2="35" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/></svg><p>대행표가 없습니다</p><small>날짜와 휴가자를 선택 후 생성하세요</small></div>`;
+    _lastCov=null;
+  }else{
+    const{result,sess}=calcCoverage(newAb,data.hours);
+    for(const m of MEMBERS)data.hours[m]=(data.hours[m]||0)+(sess[m]||0);
+    data.history[idx]={...entry,absences:newAb,assignments:result};
+    save(data);
+    _lastCov={date:entry.date,absences:newAb,assignments:result,histId:entry.id};
+    document.getElementById('covContent').innerHTML=renderCoverage(entry.date,newAb,result);
+  }
+  document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,null,data.history,data.settledMonths||[]);
+  document.getElementById('histContent').innerHTML=renderHistory(data.history);
+  renderTeamChips(data.hours,null);
+  showToast(`${name} 삭제 완료`);
 }
 
 function copyChipSlack(name){
