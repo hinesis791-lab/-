@@ -81,9 +81,14 @@ tr.grp-sep td{border-top:2px solid #dce5f0}
 .mc-new{display:inline-block;font-size:10px;font-weight:700;color:#1d4ed8;background:#dbeafe;border-radius:20px;padding:1px 7px;margin-top:4px}
 .hbar{height:4px;background:#e0e7ef;border-radius:2px;margin-top:8px;overflow:hidden}
 .hbar-f{height:100%;background:linear-gradient(90deg,#1a6ec4,#60a5fa);border-radius:2px;transition:width .8s cubic-bezier(.4,0,.2,1)}
-.hist-entry{border:1.5px solid #e0e7ef;border-radius:14px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(20,40,80,.05);transition:box-shadow .2s}
+.hist-month-folder{border:1.5px solid #d5dce8;border-radius:16px;margin-bottom:12px;overflow:hidden;box-shadow:0 2px 8px rgba(20,40,80,.06)}
+.hist-month-hdr{padding:13px 16px;background:linear-gradient(135deg,#0f2d5e,#1e4a80);color:white;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;transition:background .2s}
+.hist-month-hdr:hover{background:linear-gradient(135deg,#1a3d72,#2563a8)}
+.hist-month-body{padding:12px;display:block}
+.hist-entry{border:1.5px solid #e0e7ef;border-radius:12px;margin-bottom:8px;overflow:hidden;box-shadow:0 1px 4px rgba(20,40,80,.05);transition:box-shadow .2s}
+.hist-entry:last-child{margin-bottom:0}
 .hist-entry:hover{box-shadow:0 4px 16px rgba(20,40,80,.09)}
-.hist-hdr{padding:12px 15px;background:linear-gradient(135deg,#f8fafc,#f0f4f9);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.hist-hdr{padding:11px 14px;background:linear-gradient(135deg,#f8fafc,#f0f4f9);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
 .hist-hdr:hover{background:linear-gradient(135deg,#eef3fb,#e4edf7)}
 .hist-date{font-weight:700;font-size:13px;color:#1e3a5f}
 .hist-meta{font-size:11px;color:#7c8fa4;margin-top:2px}
@@ -589,25 +594,57 @@ function rerenderCum(data,sess){
 
 function renderHistory(history){
   if(!history.length)return`<div class="empty"><svg width="48" height="48" viewBox="0 0 48 48" fill="none" style="opacity:.3;margin-bottom:10px"><circle cx="24" cy="24" r="19" stroke="#94a3b8" stroke-width="2.5"/><line x1="24" y1="14" x2="24" y2="24" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"/><circle cx="24" cy="31" r="2" fill="#94a3b8"/></svg><p>이력이 없습니다</p><small>업무대행표를 생성하면 이력이 쌓입니다</small></div>`;
-  return[...history].sort((a,b)=>b.date.localeCompare(a.date)).map(e=>{
-    const meta=e.absences.map(a=>`${a.name}(${a.leaveType})`).join(', ');
-    const totalH=e.assignments.reduce((s,a)=>s+(a.hours??a.slots?.length??1),0);
-    return`<div class="hist-entry" id="he-${e.id}">
-      <div class="hist-hdr" onclick="toggleHist('${e.id}')">
-        <div><div class="hist-date">${fmtDate(e.date)}</div><div class="hist-meta">${meta} · 총 ${totalH}시간</div></div>
-        <div class="hist-acts">
-          <button class="btn btn-edit" onclick="event.stopPropagation();editHist('${e.id}')">✏️ 수정</button>
-          <button class="btn btn-del" onclick="event.stopPropagation();delHist('${e.id}')">🗑 삭제</button>
-          <button class="btn btn-clip" onclick="event.stopPropagation();copyHistEntry('${e.id}')">📋 복사</button>
-          <button class="btn btn-chak" onclick="event.stopPropagation();window.open('http://isup.jobkorea.co.kr/isjk/agentConfig.do','_blank')">📞 착신</button>
-          <span class="hist-chev">▼</span>
+  const sorted=[...history].sort((a,b)=>b.date.localeCompare(a.date));
+  const groups={};
+  for(const e of sorted){const ym=e.date.slice(0,7);if(!groups[ym])groups[ym]=[];groups[ym].push(e);}
+  const curYM=`${_cy}-${String(_cm+1).padStart(2,'0')}`;
+  return Object.keys(groups).sort().reverse().map(ym=>{
+    const entries=groups[ym];
+    const[y,mo]=ym.split('-');
+    const folderH=entries.reduce((s,e)=>s+e.assignments.reduce((ss,a)=>ss+(a.hours??a.slots?.length??1),0),0);
+    const isOpen=ym===curYM;
+    const entriesHtml=entries.map(e=>{
+      const meta=e.absences.map(a=>`${a.name}(${a.leaveType})`).join(', ');
+      const eH=e.assignments.reduce((s,a)=>s+(a.hours??a.slots?.length??1),0);
+      return`<div class="hist-entry" id="he-${e.id}">
+        <div class="hist-hdr" onclick="toggleHist('${e.id}')">
+          <div><div class="hist-date">${fmtDate(e.date)}</div><div class="hist-meta">${meta} · 총 ${eH}시간</div></div>
+          <div class="hist-acts">
+            <button class="btn btn-edit" onclick="event.stopPropagation();editHist('${e.id}')">✏️ 수정</button>
+            <button class="btn btn-del" onclick="event.stopPropagation();delHist('${e.id}')">🗑 삭제</button>
+            <button class="btn btn-clip" onclick="event.stopPropagation();copyHistEntry('${e.id}')">📋 복사</button>
+            <button class="btn btn-chak" onclick="event.stopPropagation();window.open('http://isup.jobkorea.co.kr/isjk/agentConfig.do','_blank')">📞 착신</button>
+            <span class="hist-chev">▼</span>
+          </div>
         </div>
+        <div class="hist-body" id="hb-${e.id}">
+          <div class="tw"><table><thead><tr><th style="width:160px">시간대</th><th>휴가자</th><th>휴가 종류</th><th>대행자</th></tr></thead><tbody>${buildRows(e.assignments)}</tbody></table></div>
+        </div>
+      </div>`;
+    }).join('');
+    return`<div class="hist-month-folder" id="hf-${ym}">
+      <div class="hist-month-hdr" onclick="toggleHistMonth('${ym}')">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span id="hfi-${ym}" style="font-size:16px">${isOpen?'📂':'📁'}</span>
+          <span style="font-weight:800;font-size:14px">${y}년 ${parseInt(mo)}월</span>
+          <span style="font-size:11px;background:rgba(255,255,255,.2);border-radius:20px;padding:2px 9px;font-weight:700">${entries.length}건</span>
+          <span style="font-size:11px;background:rgba(100,210,140,.25);color:#a7f3d0;border-radius:20px;padding:2px 9px;font-weight:700">총 ${folderH}h</span>
+        </div>
+        <span id="hfc-${ym}" style="font-size:13px;opacity:.7">${isOpen?'▲':'▼'}</span>
       </div>
-      <div class="hist-body" id="hb-${e.id}">
-        <div class="tw"><table><thead><tr><th style="width:160px">시간대</th><th>휴가자</th><th>휴가 종류</th><th>대행자</th></tr></thead><tbody>${buildRows(e.assignments)}</tbody></table></div>
-      </div>
+      <div class="hist-month-body" id="hmb-${ym}" style="${isOpen?'':'display:none'}">${entriesHtml}</div>
     </div>`;
   }).join('');
+}
+
+function toggleHistMonth(ym){
+  const body=document.getElementById(`hmb-${ym}`);
+  const icon=document.getElementById(`hfi-${ym}`);
+  const chev=document.getElementById(`hfc-${ym}`);
+  const isOpen=body.style.display!=='none';
+  body.style.display=isOpen?'none':'block';
+  if(icon)icon.textContent=isOpen?'📁':'📂';
+  if(chev)chev.textContent=isOpen?'▼':'▲';
 }
 
 function renderTeamChips(sessHours){
