@@ -578,7 +578,8 @@ function renderHistory(history){
 
 function renderTeamChips(sessHours){
   const d=load();
-  const curYM=d.currentMonth||new Date().toISOString().slice(0,7);
+  const t=new Date();
+  const curYM=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}`;
   const mh=(buildMonthlyData(d.history||[]))[curYM]||{};
   document.getElementById('teamChips').innerHTML=MEMBERS.map(m=>{
     const h=mh[m]||0,nh=sessHours?(sessHours[m]||0):0;
