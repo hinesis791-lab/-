@@ -500,7 +500,7 @@ function renderCumulative(monthHours,sessHours,history,settled,adjMap,cumHours){
     if(nh>0)cls+=' hl';
     else if(h===Math.max(...vals)&&h>0)cls+=' top';
     else if(h===Math.min(...vals)&&vals.some(v=>v>0))cls+=' low';
-    const adjBadge=adj!==0?`<div class="mc-new" style="${adj>0?'background:#d1fae5;color:#065f46':'background:#fee2e2;color:#b91c1c'}">이월 ${adj>0?'+':''}${adj}h</div>`:'';
+    const adjBadge=adj!==0?`<div class="mc-new" style="${adj>0?'background:#d1fae5;color:#065f46':'background:#fee2e2;color:#b91c1c'}">${adj>0?'+':''}${adj}h</div>`:'';
     const hBarColor=isNeg?'background:linear-gradient(90deg,#ef4444,#fca5a5)':'background:linear-gradient(90deg,#1a6ec4,#60a5fa)';
     return`<div class="${cls}"><div class="mc-name">${m}</div><div><span class="mc-hours" style="${isNeg?'color:#dc2626':''}">${h}</span><span class="mc-unit">시간</span></div>${nh>0?`<div class="mc-new">+${nh}h 추가</div>`:''}${adjBadge}<div class="hbar"><div class="hbar-f" style="width:${pct}%;${hBarColor}"></div></div></div>`;
   }).join('');
@@ -568,8 +568,11 @@ function renderCumulative(monthHours,sessHours,history,settled,adjMap,cumHours){
 function rerenderCum(data,sess){
   const curYM=`${_cy}-${String(_cm+1).padStart(2,'0')}`;
   const monthH=(buildMonthlyData(data.history||[]))[curYM]||{};
-  const adjMap=(data.settleAdjustments||{})[curYM]||{};
-  document.getElementById('cumContent').innerHTML=renderCumulative(monthH,sess,data.history,data.settledMonths||[],adjMap,data.hours);
+  // 해당 월 평균 대비 편차를 adjMap으로 전달 (정산 여부와 무관하게 항상 계산)
+  const mTotal=MEMBERS.reduce((s,m)=>s+(monthH[m]||0),0);
+  const mAvg=mTotal>0?mTotal/MEMBERS.length:0;
+  const devMap=mTotal>0?Object.fromEntries(MEMBERS.map(m=>[m,Math.round((monthH[m]||0)-mAvg)])):{};
+  document.getElementById('cumContent').innerHTML=renderCumulative(monthH,sess,data.history,data.settledMonths||[],devMap,data.hours);
 }
 
 function renderHistory(history){
@@ -599,18 +602,19 @@ function renderTeamChips(sessHours){
   const d=load();
   const curYM=`${_cy}-${String(_cm+1).padStart(2,'0')}`;
   const mh=(buildMonthlyData(d.history||[]))[curYM]||{};
-  const adjMap=(d.settleAdjustments||{})[curYM]||{};
   const titleEl=document.getElementById('teamChipsTitle');
   if(titleEl)titleEl.textContent=`팀원 ${_cm+1}월 현황`;
+  const monthTotal=MEMBERS.reduce((s,m)=>s+(mh[m]||0),0);
+  const hasData=monthTotal>0;
+  const monthAvg=hasData?monthTotal/MEMBERS.length:0;
   document.getElementById('teamChips').innerHTML=MEMBERS.map(m=>{
     const h=mh[m]||0,nh=sessHours?(sessHours[m]||0):0;
-    const adj=adjMap[m];
-    const hasAdj=adj!=null&&adj!==0;
-    const isNeg=hasAdj&&adj<0;
-    const adjBadge=hasAdj
-      ?`<span style="font-size:9px;font-weight:700;${isNeg?'color:#dc2626;background:#fee2e2':'color:#059669;background:#d1fae5'};border-radius:10px;padding:1px 6px;margin-left:3px;white-space:nowrap">이월 ${adj>0?'+':''}${adj}h</span>`
+    const dev=hasData?Math.round(h-monthAvg):0;
+    const devBadge=dev!==0
+      ?`<span style="font-size:9px;font-weight:700;${dev>0?'color:#059669;background:#d1fae5':'color:#dc2626;background:#fee2e2'};border-radius:10px;padding:1px 6px;margin-left:3px;white-space:nowrap">${dev>0?'+':''}${dev}h</span>`
       :'';
-    return`<span class="t-chip${nh>0?' active':''}" style="${isNeg?'border-color:#fca5a5;':''}">${m} <strong>${h}h</strong>${adjBadge}</span>`;
+    const borderStyle=dev<0?'border-color:#fca5a5':dev>0?'border-color:#86efac':'';
+    return`<span class="t-chip${nh>0?' active':''}" style="${borderStyle}">${m} <strong>${h}h</strong>${devBadge}</span>`;
   }).join('');
 }
 
