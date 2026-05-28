@@ -880,7 +880,7 @@ function renderFamilyDay(){
           </div>
         </div>
         <div class="hist-body open">
-          <div class="tw"><table><thead><tr><th>Family Day 참가자</th><th>업무대행자</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>
+          <div class="tw"><table><thead><tr><th>Family Day</th><th>업무대행자</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>
         </div>
       </div>`;
     }).join('');
@@ -894,7 +894,7 @@ function renderFamilyDay(){
       <div style="margin-bottom:10px">
         <div style="font-size:11px;font-weight:700;color:#5a6a7e;margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px">배정 목록</div>
         <div class="tw"><table style="width:100%">
-          <thead><tr><th style="width:44%">Family Day 참가자</th><th style="width:44%">업무대행자</th><th style="width:12%"></th></tr></thead>
+          <thead><tr><th style="width:44%">Family Day</th><th style="width:44%">업무대행자</th><th style="width:12%"></th></tr></thead>
           <tbody id="fdRows"><tr id="fd-empty-row"><td colspan="3" style="text-align:center;color:#94a3b8;padding:14px;font-size:12px">아래 버튼으로 행을 추가하세요</td></tr></tbody>
         </table></div>
       </div>
@@ -973,7 +973,7 @@ function copyFDEntry(id){
   const entry=loadFD().find(e=>e.id===id);
   if(!entry)return;
   let text=`🏖 JK기업영업2팀 Family Day 업무대행 - ${fmtDate(entry.date)}\n\n`;
-  text+=`참가자\t\t대행자\n${'─'.repeat(28)}\n`;
+  text+=`Family Day\t\t대행자\n${'─'.repeat(28)}\n`;
   for(const r of entry.rows)text+=`${r.absentee}\t\t${r.coverage||'미배정'}\n`;
   const ok=()=>showToast('슬랙 공유용 텍스트가 복사되었습니다!');
   const fb=()=>{const el=document.createElement('textarea');el.value=text;document.body.appendChild(el);el.select();try{document.execCommand('copy');ok();}catch(e){showToast('복사 실패.');}document.body.removeChild(el);};
