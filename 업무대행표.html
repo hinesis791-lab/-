@@ -568,10 +568,16 @@ function renderCumulative(monthHours,sessHours,history,settled,adjMap,cumHours){
 function rerenderCum(data,sess){
   const curYM=`${_cy}-${String(_cm+1).padStart(2,'0')}`;
   const monthH=(buildMonthlyData(data.history||[]))[curYM]||{};
-  // 해당 월 평균 대비 편차를 adjMap으로 전달 (정산 여부와 무관하게 항상 계산)
   const mTotal=MEMBERS.reduce((s,m)=>s+(monthH[m]||0),0);
-  const mAvg=mTotal>0?mTotal/MEMBERS.length:0;
-  const devMap=mTotal>0?Object.fromEntries(MEMBERS.map(m=>[m,Math.round((monthH[m]||0)-mAvg)])):{};
+  let devMap;
+  if(mTotal>0){
+    // 월 실적 있으면 평균 편차
+    const mAvg=mTotal/MEMBERS.length;
+    devMap=Object.fromEntries(MEMBERS.map(m=>[m,Math.round((monthH[m]||0)-mAvg)]));
+  }else{
+    // 월 실적 없으면 이전달 정산 이월값 폴백
+    devMap=(data.settleAdjustments||{})[curYM]||{};
+  }
   document.getElementById('cumContent').innerHTML=renderCumulative(monthH,sess,data.history,data.settledMonths||[],devMap,data.hours);
 }
 
@@ -607,14 +613,16 @@ function renderTeamChips(sessHours){
   const monthTotal=MEMBERS.reduce((s,m)=>s+(mh[m]||0),0);
   const hasData=monthTotal>0;
   const monthAvg=hasData?monthTotal/MEMBERS.length:0;
+  const settleAdj=(d.settleAdjustments||{})[curYM]||{};
   document.getElementById('teamChips').innerHTML=MEMBERS.map(m=>{
     const h=mh[m]||0,nh=sessHours?(sessHours[m]||0):0;
-    const dev=hasData?Math.round(h-monthAvg):0;
-    const devBadge=dev!==0
-      ?`<span style="font-size:9px;font-weight:700;${dev>0?'color:#059669;background:#d1fae5':'color:#dc2626;background:#fee2e2'};border-radius:10px;padding:1px 6px;margin-left:3px;white-space:nowrap">${dev>0?'+':''}${dev}h</span>`
+    // 월 실적 있으면 평균 편차, 없으면 이전달 정산 이월값
+    const val=hasData?Math.round(h-monthAvg):(settleAdj[m]??0);
+    const badge=val!==0
+      ?`<span style="font-size:9px;font-weight:700;${val>0?'color:#059669;background:#d1fae5':'color:#dc2626;background:#fee2e2'};border-radius:10px;padding:1px 6px;margin-left:3px;white-space:nowrap">${val>0?'+':''}${val}h</span>`
       :'';
-    const borderStyle=dev<0?'border-color:#fca5a5':dev>0?'border-color:#86efac':'';
-    return`<span class="t-chip${nh>0?' active':''}" style="${borderStyle}">${m} <strong>${h}h</strong>${devBadge}</span>`;
+    const borderStyle=val<0?'border-color:#fca5a5':val>0?'border-color:#86efac':'';
+    return`<span class="t-chip${nh>0?' active':''}" style="${borderStyle}">${m} <strong>${h}h</strong>${badge}</span>`;
   }).join('');
 }
 
