@@ -332,6 +332,7 @@ const DAYS=['일','월','화','수','목','금','토'];
 const SLOTS={'연차휴가':[9,10,11,13,14,15,16,17],'오전연차':[9,10,11,13],'오후연차':[14,15,16,17],'오전반반차':[9,10],'오후반반차':[16,17]};
 const BADGE={'연차휴가':'b-red','오전연차':'b-blue','오후연차':'b-orange','오전반반차':'b-green','오후반반차':'b-purple'};
 const SK='wca_v3', IK='wca_imp', FK='wca_fd', VK='wca_vac';
+let _lastCov=null;
 
 // ── Data ──────────────────────────────────────────────
 function load(){try{const d=localStorage.getItem(SK);if(d)return JSON.parse(d);}catch(e){}return{hours:Object.fromEntries(MEMBERS.map(m=>[m,0])),history:[]};}
@@ -455,7 +456,7 @@ function renderCoverage(date,absences,assignments){
   const summ={};
   for(const a of assignments){const h=a.hours??a.slots?.length??1;summ[a.assignee]=(summ[a.assignee]||0)+h;}
   const summChips=Object.entries(summ).map(([n,h])=>`<span class="s-chip">${n} <span style="color:#2e86c1">+${h}h</span></span>`).join('');
-  return`<div class="banner"><div><div class="banner-date">${fmtDate(date)}</div><div class="banner-sub">업무대행 일정</div></div><div class="chips">${absences.map(a=>`<span class="chip">${a.name}·${a.leaveType}</span><button class="chip-copy" onclick="copyChip('${a.name}','${a.leaveType}')">📋 복사</button><a href="http://isup.jobkorea.co.kr/isjk/agentConfig.do" target="_blank" class="chip-chak">📞 착신</a>`).join('')}</div></div>
+  return`<div class="banner"><div><div class="banner-date">${fmtDate(date)}</div><div class="banner-sub">업무대행 일정</div></div><div class="chips">${absences.map(a=>`<span class="chip">${a.name}·${a.leaveType}</span><button class="chip-copy" onclick="copyChipSlack('${a.name}')">📋 복사</button><a href="http://isup.jobkorea.co.kr/isjk/agentConfig.do" target="_blank" class="chip-chak">📞 착신</a>`).join('')}</div></div>
   <div class="tw"><table><thead><tr><th style="width:160px">시간대 (연속 블록)</th><th>휴가자</th><th>휴가 종류</th><th>대행자</th></tr></thead><tbody>${buildRows(assignments)}</tbody></table></div>
   <div class="summary-box"><h4>이번 배정 요약</h4><div class="summary-chips">${summChips}</div></div>`;
 }
@@ -637,6 +638,7 @@ function generate(){
   for(const m of MEMBERS)data.hours[m]=(data.hours[m]||0)+(sess[m]||0);
   data.history.push({id:`${date}-${Date.now()}`,date,absences,assignments:result});
   save(data);
+  _lastCov={date,absences,assignments:result};
   document.getElementById('covContent').innerHTML=renderCoverage(date,absences,result);
   document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,sess,data.history,data.settledMonths||[]);
   document.getElementById('histContent').innerHTML=renderHistory(data.history);
@@ -712,6 +714,7 @@ function saveEdit(){
   for(const m of MEMBERS)data.hours[m]=(data.hours[m]||0)+(sess[m]||0);
   data.history[idx]={...data.history[idx],absences:newAb,assignments:result};
   save(data);
+  _lastCov={date:data.history[idx].date,absences:newAb,assignments:result};
   document.getElementById('covContent').innerHTML=renderCoverage(data.history[idx].date,newAb,result);
   document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,sess,data.history,data.settledMonths||[]);
   document.getElementById('histContent').innerHTML=renderHistory(data.history);
@@ -813,9 +816,18 @@ function copyHistEntry(id){
   navigator.clipboard?navigator.clipboard.writeText(text).then(ok).catch(fb):fb();
 }
 
-function copyChip(name,leaveType){
-  const text=`${name} ${leaveType}`;
-  const ok=()=>showToast(`'${text}' 복사되었습니다!`);
+function copyChipSlack(name){
+  if(!_lastCov){showToast('대행표를 먼저 생성해주세요.');return;}
+  const {date,absences,assignments}=_lastCov;
+  const ab=absences.find(a=>a.name===name);
+  if(!ab)return;
+  const mine=[...assignments.filter(a=>a.absentee===name)].sort((a,b)=>startSlotOf(a)-startSlotOf(b));
+  let text=`📋 JK기업영업2팀 업무(자동누적)대행표 - ${fmtDate(date)}\n`;
+  text+=`휴가자: ${name}(${ab.leaveType})\n\n`;
+  text+=`시간대\t\t\t휴가자\t\t대행자\n`;
+  text+=`${'─'.repeat(36)}\n`;
+  for(const a of mine)text+=`${a.slotLabel}\t${a.absentee}\t${a.assignee}\n`;
+  const ok=()=>showToast('슬랙 공유용 텍스트가 복사되었습니다!');
   const fb=()=>{const el=document.createElement('textarea');el.value=text;document.body.appendChild(el);el.select();try{document.execCommand('copy');ok();}catch(e){showToast('복사 실패.');}document.body.removeChild(el);};
   navigator.clipboard?navigator.clipboard.writeText(text).then(ok).catch(fb):fb();
 }
