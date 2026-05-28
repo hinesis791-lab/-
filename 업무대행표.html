@@ -481,41 +481,40 @@ function buildMonthlyData(history){
   return months;
 }
 
-function renderCumulative(hours,sessHours,history,settled,adjMap){
+// monthHours: 선택 월 실적, cumHours: 누적 잔액(음수 포함)
+function renderCumulative(monthHours,sessHours,history,settled,adjMap,cumHours){
   if(!settled)settled=[];
-  const vals=MEMBERS.map(m=>hours[m]??0);
-  const absMax=Math.max(Math.abs(Math.max(...vals)),Math.abs(Math.min(...vals)),1);
-  const maxH=Math.max(...vals,1);
+  if(!cumHours)cumHours=monthHours;
+  const vals=MEMBERS.map(m=>monthHours[m]??0);
+  const absMax=Math.max(...vals.map(v=>Math.abs(v)),1);
   const maxM=MEMBERS[vals.indexOf(Math.max(...vals))];
   const minM=MEMBERS[vals.indexOf(Math.min(...vals))];
   const avg=(vals.reduce((s,v)=>s+v,0)/MEMBERS.length).toFixed(1);
-  const sorted=[...MEMBERS].sort((a,b)=>(hours[a]??0)-(hours[b]??0));
+  const sorted=[...MEMBERS].sort((a,b)=>(monthHours[a]??0)-(monthHours[b]??0));
   const cards=sorted.map(m=>{
-    const h=hours[m]??0,nh=sessHours?(sessHours[m]||0):0;
+    const h=monthHours[m]??0,nh=sessHours?(sessHours[m]||0):0;
     const isNeg=h<0;
-    const pct=isNeg?Math.min(100,Math.round(Math.abs(h)/absMax*100)):Math.max(0,Math.round(h/absMax*100));
+    const pct=absMax>0?Math.min(100,Math.round(Math.abs(h)/absMax*100)):0;
     const adj=adjMap?(adjMap[m]||0):0;
     let cls='mc';
     if(nh>0)cls+=' hl';
     else if(h===Math.max(...vals)&&h>0)cls+=' top';
-    else if(h===Math.min(...vals))cls+=' low';
+    else if(h===Math.min(...vals)&&vals.some(v=>v>0))cls+=' low';
     const adjBadge=adj!==0?`<div class="mc-new" style="${adj>0?'background:#d1fae5;color:#065f46':'background:#fee2e2;color:#b91c1c'}">이월 ${adj>0?'+':''}${adj}h</div>`:'';
     const hBarColor=isNeg?'background:linear-gradient(90deg,#ef4444,#fca5a5)':'background:linear-gradient(90deg,#1a6ec4,#60a5fa)';
     return`<div class="${cls}"><div class="mc-name">${m}</div><div><span class="mc-hours" style="${isNeg?'color:#dc2626':''}">${h}</span><span class="mc-unit">시간</span></div>${nh>0?`<div class="mc-new">+${nh}h 추가</div>`:''}${adjBadge}<div class="hbar"><div class="hbar-f" style="width:${pct}%;${hBarColor}"></div></div></div>`;
   }).join('');
 
-  // 월별 현황 테이블 + 정산
+  // 월별 현황 테이블
   const mdata=buildMonthlyData(history||[]);
   const mkeys=Object.keys(mdata).sort().reverse();
   let monthly='';
   if(mkeys.length>0){
-    // 월별 평균 사전 계산
     const mavg={};
     mkeys.forEach(ym=>{
       const t=MEMBERS.reduce((s,m)=>s+(mdata[ym][m]||0),0);
       mavg[ym]=t/MEMBERS.length;
     });
-
     const hdr=mkeys.map(ym=>{
       const[y,m]=ym.split('-');
       const isSettled=settled.includes(ym);
@@ -524,7 +523,6 @@ function renderCumulative(hours,sessHours,history,settled,adjMap){
         :`<button onclick="settleMonth('${ym}')" style="display:inline-block;margin-top:3px;font-size:10px;padding:1px 6px;border:1.5px solid #f59e0b;background:#fffbeb;color:#92400e;border-radius:4px;cursor:pointer;font-family:inherit;font-weight:700">⚖️ 정산</button>`;
       return`<th style="text-align:center;white-space:nowrap">${y}년 ${parseInt(m)}월<br><span style="font-size:10px;font-weight:400;opacity:.8">평균 ${mavg[ym].toFixed(1)}h</span><br>${badge}</th>`;
     }).join('');
-
     const rows=sorted.map(member=>{
       const cells=mkeys.map(ym=>{
         const h=mdata[ym][member]||0;
@@ -534,36 +532,44 @@ function renderCumulative(hours,sessHours,history,settled,adjMap){
         const exTag=isAbove?`<br><span style="font-size:10px;color:#dc2626">+${excess.toFixed(1)}h</span>`:'';
         return`<td style="text-align:center;color:${color}">${h>0?`<strong>${h}h</strong>${exTag}`:'-'}</td>`;
       }).join('');
-      const runH=hours[member]??0;const runC=runH<0?'#dc2626':'#2e86c1';
-      return`<tr><td><strong>${member}</strong></td>${cells}<td style="text-align:center;font-weight:800;color:${runC}">${runH}h</td></tr>`;
+      const runH=cumHours[member]??0;
+      const runC=runH<0?'#dc2626':runH>0?'#2e86c1':'#94a3b8';
+      return`<tr><td><strong>${member}</strong></td>${cells}<td style="text-align:center;font-weight:800;color:${runC}">${runH>0?'+':''}${runH}h</td></tr>`;
     }).join('');
-
     const totCells=mkeys.map(ym=>{
       const t=MEMBERS.reduce((s,m)=>s+(mdata[ym][m]||0),0);
       return`<td style="text-align:center;font-weight:700;color:#374151;background:#f0f4f8">${t}h</td>`;
     }).join('');
-    const grand=MEMBERS.reduce((s,m)=>s+(hours[m]||0),0);
-
+    const grand=MEMBERS.reduce((s,m)=>s+(cumHours[m]??0),0);
+    const grandC=grand<0?'#dc2626':grand>0?'#1e3a5f':'#94a3b8';
     monthly=`<div style="margin-top:22px;padding-top:18px;border-top:2px solid #eef2f7">
       <div style="font-size:13px;font-weight:700;color:#1e3a5f;margin-bottom:6px;display:flex;align-items:center;gap:6px"><span class="ctbar"></span>월별 대행 시간 현황</div>
       <div style="font-size:11px;color:#7c8fa4;margin-bottom:10px">⚖️ <strong>정산</strong>: 평균 초과 → <span style="color:#059669;font-weight:700">+이월</span> (덜 채워도 됨) · 평균 부족 → <span style="color:#dc2626;font-weight:700">-이월</span> (더 채워야 함)</div>
       <div class="tw"><table>
-        <thead><tr><th>이름</th>${hdr}<th style="text-align:center;background:#2e5a8e">합계</th></tr></thead>
-        <tbody>${rows}<tr><td style="font-weight:700;color:#5a6a7e;background:#f0f4f8">월 합계</td>${totCells}<td style="text-align:center;font-weight:800;color:#1e3a5f;background:#e0e8f4">${grand}h</td></tr></tbody>
+        <thead><tr><th>이름</th>${hdr}<th style="text-align:center;background:#2e5a8e">누적 잔액</th></tr></thead>
+        <tbody>${rows}<tr><td style="font-weight:700;color:#5a6a7e;background:#f0f4f8">월 합계</td>${totCells}<td style="text-align:center;font-weight:800;color:${grandC};background:#e0e8f4">${grand>0?'+':''}${grand}h</td></tr></tbody>
       </table></div>
     </div>`;
   }
 
   return`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-    <div><span style="font-size:13px;font-weight:700;color:#5a6a7e">이번달 누적 대행 시간 (적은 순)</span><div style="font-size:10px;color:#94a3b8;margin-top:2px">월 변경 시 자동 초기화 · 이전 달은 아래 월별 현황 참조</div></div>
+    <div><span style="font-size:13px;font-weight:700;color:#5a6a7e">${_cm+1}월 대행 시간 (적은 순)</span><div style="font-size:10px;color:#94a3b8;margin-top:2px">달력 ◀▶로 월 변경 · 하단 테이블에서 누적 잔액(+/−) 확인</div></div>
     <button class="btn btn-excel" onclick="downloadExcel()">📥 엑셀 다운로드</button>
   </div>
   <div class="stat-row">
-    <div class="stat-box" style="background:#eff6ff;border:1.5px solid #bfdbfe"><div class="s-label" style="color:#60a5fa">가장 많이 대행</div><div class="s-name">${maxM}</div><div class="s-val" style="color:#2e86c1">${hours[maxM]||0}h</div></div>
-    <div class="stat-box" style="background:#ecfdf5;border:1.5px solid #a7f3d0"><div class="s-label" style="color:#34d399">가장 적게 대행</div><div class="s-name">${minM}</div><div class="s-val" style="color:#059669">${hours[minM]||0}h</div></div>
-    <div class="stat-box" style="background:#faf5ff;border:1.5px solid #e9d5ff"><div class="s-label" style="color:#a78bfa">전체 평균</div><div class="s-name" style="font-size:11px;margin-bottom:2px">평균</div><div class="s-val" style="color:#7c3aed">${avg}h</div></div>
+    <div class="stat-box" style="background:#eff6ff;border:1.5px solid #bfdbfe"><div class="s-label" style="color:#60a5fa">가장 많이 대행</div><div class="s-name">${maxM}</div><div class="s-val" style="color:#2e86c1">${monthHours[maxM]??0}h</div></div>
+    <div class="stat-box" style="background:#ecfdf5;border:1.5px solid #a7f3d0"><div class="s-label" style="color:#34d399">가장 적게 대행</div><div class="s-name">${minM}</div><div class="s-val" style="color:#059669">${monthHours[minM]??0}h</div></div>
+    <div class="stat-box" style="background:#faf5ff;border:1.5px solid #e9d5ff"><div class="s-label" style="color:#a78bfa">월 평균</div><div class="s-name" style="font-size:11px;margin-bottom:2px">평균</div><div class="s-val" style="color:#7c3aed">${avg}h</div></div>
   </div>
   <div class="members-grid">${cards}</div>${monthly}`;
+}
+
+// 누적 탭 재렌더 헬퍼
+function rerenderCum(data,sess){
+  const curYM=`${_cy}-${String(_cm+1).padStart(2,'0')}`;
+  const monthH=(buildMonthlyData(data.history||[]))[curYM]||{};
+  const adjMap=(data.settleAdjustments||{})[curYM]||{};
+  document.getElementById('cumContent').innerHTML=renderCumulative(monthH,sess,data.history,data.settledMonths||[],adjMap,data.hours);
 }
 
 function renderHistory(history){
@@ -593,16 +599,18 @@ function renderTeamChips(sessHours){
   const d=load();
   const curYM=`${_cy}-${String(_cm+1).padStart(2,'0')}`;
   const mh=(buildMonthlyData(d.history||[]))[curYM]||{};
+  const adjMap=(d.settleAdjustments||{})[curYM]||{};
   const titleEl=document.getElementById('teamChipsTitle');
   if(titleEl)titleEl.textContent=`팀원 ${_cm+1}월 현황`;
   document.getElementById('teamChips').innerHTML=MEMBERS.map(m=>{
     const h=mh[m]||0,nh=sessHours?(sessHours[m]||0):0;
-    const cumul=d.hours[m]??0;
-    const isNeg=cumul<0;
-    const cumulBadge=cumul!==0
-      ?`<span style="font-size:9px;font-weight:700;${isNeg?'color:#dc2626;background:#fee2e2':'color:#059669;background:#d1fae5'};border-radius:10px;padding:1px 6px;margin-left:3px;white-space:nowrap">잔액 ${cumul>0?'+':''}${cumul}h</span>`
+    const adj=adjMap[m];
+    const hasAdj=adj!=null&&adj!==0;
+    const isNeg=hasAdj&&adj<0;
+    const adjBadge=hasAdj
+      ?`<span style="font-size:9px;font-weight:700;${isNeg?'color:#dc2626;background:#fee2e2':'color:#059669;background:#d1fae5'};border-radius:10px;padding:1px 6px;margin-left:3px;white-space:nowrap">이월 ${adj>0?'+':''}${adj}h</span>`
       :'';
-    return`<span class="t-chip${nh>0?' active':''}" style="${isNeg?'border-color:#fca5a5;':''}">${m} <strong>${h}h</strong>${cumulBadge}</span>`;
+    return`<span class="t-chip${nh>0?' active':''}" style="${isNeg?'border-color:#fca5a5;':''}">${m} <strong>${h}h</strong>${adjBadge}</span>`;
   }).join('');
 }
 
@@ -664,7 +672,7 @@ function generate(){
   save(data);
   _lastCov={date,absences,assignments:result,histId:newId};
   document.getElementById('covContent').innerHTML=renderCoverage(date,absences,result);
-  document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,sess,data.history,data.settledMonths||[],(data.settleAdjustments||{})[`${_cy}-${String(_cm+1).padStart(2,'0')}`]||{});
+  rerenderCum(data,sess);
   document.getElementById('histContent').innerHTML=renderHistory(data.history);
   renderTeamChips(sess);
   showTab('cov');
@@ -676,6 +684,7 @@ function showTab(id){
   document.getElementById('tab-'+id).classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(b=>{if(b.getAttribute('onclick').includes(`'${id}'`))b.classList.add('active');});
   if(id==='vac')renderVacCal();
+  if(id==='cum')rerenderCum(load(),null);
 }
 
 function toggleHist(id){
@@ -694,7 +703,7 @@ function delHist(id){
   for(const m of MEMBERS)data.hours[m]=(data.hours[m]||0)-(os[m]||0);
   data.history.splice(idx,1);save(data);
   document.getElementById('histContent').innerHTML=renderHistory(data.history);
-  document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,null,data.history,data.settledMonths||[],(data.settleAdjustments||{})[`${_cy}-${String(_cm+1).padStart(2,'0')}`]||{});
+  rerenderCum(data,null);
   renderTeamChips(null);
 }
 
@@ -740,7 +749,7 @@ function saveEdit(){
   save(data);
   _lastCov={date:data.history[idx].date,absences:newAb,assignments:result,histId:data.history[idx].id};
   document.getElementById('covContent').innerHTML=renderCoverage(data.history[idx].date,newAb,result);
-  document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,sess,data.history,data.settledMonths||[],(data.settleAdjustments||{})[`${_cy}-${String(_cm+1).padStart(2,'0')}`]||{});
+  rerenderCum(data,sess);
   document.getElementById('histContent').innerHTML=renderHistory(data.history);
   renderTeamChips(sess);
   closeEditModal();showTab('hist');showToast('수정이 완료되었습니다.');
@@ -867,7 +876,7 @@ function delCovAbsentee(name){
     _lastCov={date:entry.date,absences:newAb,assignments:result,histId:entry.id};
     document.getElementById('covContent').innerHTML=renderCoverage(entry.date,newAb,result);
   }
-  document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,null,data.history,data.settledMonths||[],(data.settleAdjustments||{})[`${_cy}-${String(_cm+1).padStart(2,'0')}`]||{});
+  rerenderCum(data,null);
   document.getElementById('histContent').innerHTML=renderHistory(data.history);
   renderTeamChips(null);
   showToast(`${name} 삭제 완료`);
@@ -988,7 +997,7 @@ function settleMonth(ym){
   }
   data.settledMonths.push(ym);
   save(data);
-  document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,null,data.history,data.settledMonths,(data.settleAdjustments||{})[`${_cy}-${String(_cm+1).padStart(2,'0')}`]||{});
+  rerenderCum(data,null);
   renderTeamChips(null);
   showToast(`${y}년 ${parseInt(mo)}월 정산 완료!`);
 }
@@ -1303,6 +1312,7 @@ function moveCal(d){
   if(_cm>11){_cm=0;_cy++;}
   renderCal();
   renderTeamChips(null);
+  if(document.getElementById('tab-cum').classList.contains('active'))rerenderCum(load(),null);
 }
 function selCalDate(ds){
   document.getElementById('dateInput').value=ds;
@@ -1345,7 +1355,7 @@ function showToast(msg){
 
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeEditModal();closeShareModal();closeVacModal();}});
 
-  document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,null,data.history,data.settledMonths||[],(data.settleAdjustments||{})[`${_cy}-${String(_cm+1).padStart(2,'0')}`]||{});
+  rerenderCum(data,null);
   document.getElementById('histContent').innerHTML=renderHistory(data.history);
   renderFamilyDay();
   renderTeamChips(null);
