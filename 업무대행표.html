@@ -875,6 +875,7 @@ function renderFamilyDay(){
           <div class="hist-acts">
             <button class="btn btn-edit" onclick="editFDEntry('${e.id}')">✏️ 수정</button>
             <button class="btn btn-del" onclick="delFDEntry('${e.id}')">🗑 삭제</button>
+            <button class="btn btn-clip" onclick="copyFDEntry('${e.id}')">📋 복사</button>
             <button class="btn btn-chak" onclick="window.open('http://isup.jobkorea.co.kr/isjk/agentConfig.do','_blank')">📞 착신</button>
           </div>
         </div>
@@ -967,6 +968,17 @@ function editFDEntry(id){
 }
 
 function cancelFDEdit(){renderFamilyDay();}
+
+function copyFDEntry(id){
+  const entry=loadFD().find(e=>e.id===id);
+  if(!entry)return;
+  let text=`🏖 JK기업영업2팀 Family Day 업무대행 - ${fmtDate(entry.date)}\n\n`;
+  text+=`참가자\t\t대행자\n${'─'.repeat(28)}\n`;
+  for(const r of entry.rows)text+=`${r.absentee}\t\t${r.coverage||'미배정'}\n`;
+  const ok=()=>showToast('슬랙 공유용 텍스트가 복사되었습니다!');
+  const fb=()=>{const el=document.createElement('textarea');el.value=text;document.body.appendChild(el);el.select();try{document.execCommand('copy');ok();}catch(e){showToast('복사 실패.');}document.body.removeChild(el);};
+  navigator.clipboard?navigator.clipboard.writeText(text).then(ok).catch(fb):fb();
+}
 
 function delFDEntry(id){
   if(!confirm('이 Family Day 이력을 삭제하시겠습니까?'))return;
