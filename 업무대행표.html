@@ -578,10 +578,10 @@ function renderHistory(history){
 
 function renderTeamChips(sessHours){
   const d=load();
-  const curYM=`${_calYear}-${String(_calMonth+1).padStart(2,'0')}`;
+  const curYM=`${_cy}-${String(_cm+1).padStart(2,'0')}`;
   const mh=(buildMonthlyData(d.history||[]))[curYM]||{};
   const titleEl=document.getElementById('teamChipsTitle');
-  if(titleEl)titleEl.textContent=`팀원 ${_calMonth+1}월 현황`;
+  if(titleEl)titleEl.textContent=`팀원 ${_cm+1}월 현황`;
   document.getElementById('teamChips').innerHTML=MEMBERS.map(m=>{
     const h=mh[m]||0,nh=sessHours?(sessHours[m]||0):0;
     return`<span class="t-chip${nh>0?' active':''}">${m} <strong>${h}h</strong></span>`;
