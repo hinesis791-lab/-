@@ -576,9 +576,12 @@ function renderHistory(history){
   }).join('');
 }
 
-function renderTeamChips(hours,sessHours){
+function renderTeamChips(sessHours){
+  const d=load();
+  const curYM=d.currentMonth||new Date().toISOString().slice(0,7);
+  const mh=(buildMonthlyData(d.history||[]))[curYM]||{};
   document.getElementById('teamChips').innerHTML=MEMBERS.map(m=>{
-    const h=hours[m]||0,nh=sessHours?(sessHours[m]||0):0;
+    const h=mh[m]||0,nh=sessHours?(sessHours[m]||0):0;
     return`<span class="t-chip${nh>0?' active':''}">${m} <strong>${h}h</strong></span>`;
   }).join('');
 }
@@ -643,7 +646,7 @@ function generate(){
   document.getElementById('covContent').innerHTML=renderCoverage(date,absences,result);
   document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,sess,data.history,data.settledMonths||[]);
   document.getElementById('histContent').innerHTML=renderHistory(data.history);
-  renderTeamChips(data.hours,sess);
+  renderTeamChips(sess);
   showTab('cov');
 }
 
@@ -672,7 +675,7 @@ function delHist(id){
   data.history.splice(idx,1);save(data);
   document.getElementById('histContent').innerHTML=renderHistory(data.history);
   document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,null,data.history,data.settledMonths||[]);
-  renderTeamChips(data.hours,null);
+  renderTeamChips(null);
 }
 
 function confirmReset(){
@@ -719,7 +722,7 @@ function saveEdit(){
   document.getElementById('covContent').innerHTML=renderCoverage(data.history[idx].date,newAb,result);
   document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,sess,data.history,data.settledMonths||[]);
   document.getElementById('histContent').innerHTML=renderHistory(data.history);
-  renderTeamChips(data.hours,sess);
+  renderTeamChips(sess);
   closeEditModal();showTab('hist');showToast('수정이 완료되었습니다.');
 }
 
@@ -846,7 +849,7 @@ function delCovAbsentee(name){
   }
   document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,null,data.history,data.settledMonths||[]);
   document.getElementById('histContent').innerHTML=renderHistory(data.history);
-  renderTeamChips(data.hours,null);
+  renderTeamChips(null);
   showToast(`${name} 삭제 완료`);
 }
 
@@ -957,7 +960,7 @@ function settleMonth(ym){
   data.settledMonths.push(ym);
   save(data);
   document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,null,data.history,data.settledMonths);
-  renderTeamChips(data.hours,null);
+  renderTeamChips(null);
   showToast(`${y}년 ${parseInt(mo)}월 정산 완료!`);
 }
 
@@ -1315,7 +1318,7 @@ function showToast(msg){
   document.getElementById('cumContent').innerHTML=renderCumulative(data.hours,null,data.history,data.settledMonths||[]);
   document.getElementById('histContent').innerHTML=renderHistory(data.history);
   renderFamilyDay();
-  renderTeamChips(data.hours,null);
+  renderTeamChips(null);
 })();
 </script>
 </body>
