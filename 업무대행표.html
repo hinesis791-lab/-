@@ -586,8 +586,8 @@ function showTab(id){
 function toggleHist(id){
   const body=document.getElementById('hb-'+id),entry=document.getElementById('he-'+id);
   const open=body.classList.contains('open');
-  document.querySelectorAll('.hist-body').forEach(b=>b.classList.remove('open'));
-  document.querySelectorAll('.hist-entry').forEach(e=>e.classList.remove('open'));
+  document.querySelectorAll('#tab-hist .hist-body').forEach(b=>b.classList.remove('open'));
+  document.querySelectorAll('#tab-hist .hist-entry').forEach(e=>e.classList.remove('open'));
   if(!open){body.classList.add('open');entry.classList.add('open');}
 }
 
