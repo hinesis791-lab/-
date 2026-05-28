@@ -212,7 +212,7 @@ tr.grp-sep td{border-top:2px solid #dce5f0}
       <button class="btn btn-gen" onclick="generate()">▶ 업무대행표 생성</button>
     </div>
     <div class="card">
-      <div class="card-title"><span class="ctbar"></span>팀원 이번달 현황</div>
+      <div class="card-title"><span class="ctbar"></span><span id="teamChipsTitle">팀원 이번달 현황</span></div>
       <div id="teamChips" class="team-chips"></div>
     </div>
   </div>
@@ -578,9 +578,10 @@ function renderHistory(history){
 
 function renderTeamChips(sessHours){
   const d=load();
-  const t=new Date();
-  const curYM=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}`;
+  const curYM=`${_calYear}-${String(_calMonth+1).padStart(2,'0')}`;
   const mh=(buildMonthlyData(d.history||[]))[curYM]||{};
+  const titleEl=document.getElementById('teamChipsTitle');
+  if(titleEl)titleEl.textContent=`팀원 ${_calMonth+1}월 현황`;
   document.getElementById('teamChips').innerHTML=MEMBERS.map(m=>{
     const h=mh[m]||0,nh=sessHours?(sessHours[m]||0):0;
     return`<span class="t-chip${nh>0?' active':''}">${m} <strong>${h}h</strong></span>`;
@@ -1274,6 +1275,7 @@ function moveCal(d){
   if(_cm<0){_cm=11;_cy--;}
   if(_cm>11){_cm=0;_cy++;}
   renderCal();
+  renderTeamChips(null);
 }
 function selCalDate(ds){
   document.getElementById('dateInput').value=ds;
