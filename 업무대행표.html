@@ -526,11 +526,12 @@ function renderCumulative(monthHours,sessHours,history,settled,adjMap,cumHours){
     const rows=sorted.map(member=>{
       const cells=mkeys.map(ym=>{
         const h=mdata[ym][member]||0;
-        const excess=h-mavg[ym];
-        const isAbove=excess>0.05;
-        const color=h===0?'#cbd5e1':(isAbove?'#c2410c':'#1e3a5f');
-        const exTag=isAbove?`<br><span style="font-size:10px;color:#dc2626">+${excess.toFixed(1)}h</span>`:'';
-        return`<td style="text-align:center;color:${color}">${h>0?`<strong>${h}h</strong>${exTag}`:'-'}</td>`;
+        const excess=Math.round(h-mavg[ym]);
+        const exColor=excess>0?'#059669':excess<0?'#dc2626':'';
+        const exTag=excess!==0
+          ?`<br><span style="font-size:10px;font-weight:700;color:${exColor}">${excess>0?'+':''}${excess}h</span>`
+          :'';
+        return`<td style="text-align:center">${h>0?`<strong style="color:#1e3a5f">${h}h</strong>${exTag}`:`<span style="color:#cbd5e1">-</span>`}</td>`;
       }).join('');
       const runH=cumHours[member]??0;
       const runC=runH<0?'#dc2626':runH>0?'#2e86c1':'#94a3b8';
