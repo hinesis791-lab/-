@@ -185,7 +185,7 @@ tr.grp-sep td{border-top:2px solid #dce5f0}
 <body>
 
 <header class="app-header">
-  <div><h1>JK기업영업2팀 업무(자동누적)대행표</h1><p>11명 팀원 · 최대 4명 동시 휴가 · 연속 시간 블록 배정 &nbsp;<span id="fbStatus" style="font-size:11px;opacity:.8">⏳ 연결 중...</span></p></div>
+  <div><h1>JK기업영업2팀 업무(자동누적)대행표</h1><p>11명 팀원 · 최대 7명 동시 휴가 · 연속 시간 블록 배정 &nbsp;<span id="fbStatus" style="font-size:11px;opacity:.8">⏳ 연결 중...</span></p></div>
   <div class="header-btns">
     <button class="btn btn-share" onclick="openShareModal()">🔗 공유 링크</button>
     <button class="btn btn-hdr" onclick="window.print()">🖨 인쇄</button>
@@ -1304,7 +1304,7 @@ function renderVacCal(){
     const ds=`${_vcY}-${String(_vcM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const dw=(dow0+d-1)%7;
     const de=byDate[ds]||[];
-    const isFull=de.length>=4;
+    const isFull=de.length>=7;
     const isToday=ds===todayStr;
     let cls='vcal-cell';
     if(isToday)cls+=' vcd-today';else if(dw===0||dw===6)cls+=' vcd-we';
@@ -1319,7 +1319,7 @@ function renderVacCal(){
       </div>
     </div>`).join('');
     const footer=isFull
-      ?`<div class="vcal-fulltag">⚠ 4명 마감</div>`
+      ?`<div class="vcal-fulltag">⚠ 7명 마감</div>`
       :`<button class="vcal-addbtn" onclick="openVacAdd('${ds}')">＋ 추가</button>`;
     g+=`<div class="${cls}"><div class="${dnCls}">${d}</div>${erHtml}${footer}</div>`;
   }
@@ -1335,7 +1335,7 @@ function renderVacCal(){
     </div>
     <div class="vcal-wrap"><div class="vcal-grid">${g}</div></div>
     <div style="margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:4px">${legend}</div>
-    <div style="margin-top:6px;font-size:11px;color:#94a3b8">날짜 셀의 <strong>＋ 추가</strong> 클릭 · 하루 최대 4명 · 누적 시간 미포함</div>`;
+    <div style="margin-top:6px;font-size:11px;color:#94a3b8">날짜 셀의 <strong>＋ 추가</strong> 클릭 · 하루 최대 7명 · 누적 시간 미포함</div>`;
 }
 
 function moveVacCal(d){
@@ -1381,7 +1381,7 @@ function saveVacEntry(){
     if(idx!==-1)entries[idx]={...entries[idx],name,leaveType};
     saveVac(entries);showToast('수정되었습니다.');
   }else{
-    if(entries.filter(e=>e.date===date).length>=4){showToast('해당 날짜는 이미 4명이 등록되어 있습니다.');closeVacModal();return;}
+    if(entries.filter(e=>e.date===date).length>=7){showToast('해당 날짜는 이미 7명이 등록되어 있습니다.');closeVacModal();return;}
     if(entries.some(e=>e.date===date&&e.name===name)){showToast(`${name}님은 이미 해당 날짜에 등록되어 있습니다.`);return;}
     entries.push({id:`vac-${date}-${Date.now()}`,date,name,leaveType});
     saveVac(entries);showToast('휴가가 등록되었습니다.');
