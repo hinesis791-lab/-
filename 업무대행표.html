@@ -71,7 +71,7 @@ tbody tr:last-child td{border-bottom:none}
 tbody tr:hover td{background:#f8fafc}
 tr.grp-sep td{border-top:2px solid #dce5f0}
 .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700}
-.b-red{background:#fee2e2;color:#b91c1c}.b-blue{background:#dbeafe;color:#1d4ed8}.b-orange{background:#ffedd5;color:#c2410c}.b-green{background:#d1fae5;color:#065f46}.b-purple{background:#ede9fe;color:#6d28d9}
+.b-red{background:#fee2e2;color:#b91c1c}.b-blue{background:#dbeafe;color:#1d4ed8}.b-orange{background:#ffedd5;color:#c2410c}.b-green{background:#d1fae5;color:#065f46}.b-purple{background:#ede9fe;color:#6d28d9}.b-teal{background:#ccfbf1;color:#0f766e}
 .members-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:10px}
 .mc{background:#f8fafc;border:1.5px solid #e0e7ef;border-radius:12px;padding:12px;transition:all .2s cubic-bezier(.4,0,.2,1);box-shadow:0 1px 3px rgba(20,40,80,.04)}
 .mc:hover{border-color:#93c5fd;background:white;transform:translateY(-2px);box-shadow:0 4px 16px rgba(20,40,80,.1)}
@@ -198,28 +198,28 @@ tr.grp-sep td{border-top:2px solid #dce5f0}
         <div class="ab-header"><span class="nb nb-1">1</span>휴가자 1</div>
         <div class="form-row">
           <div class="form-group" style="margin-bottom:0"><label>이름</label><select id="n1"><option value="">선택 안함</option></select></div>
-          <div class="form-group" style="margin-bottom:0"><label>휴가 종류</label><select id="t1" disabled><option value="">선택</option><option value="연차휴가">연차휴가 (종일)</option><option value="오전연차">오전연차 (9~14시)</option><option value="오후연차">오후연차 (14~18시)</option><option value="오전반반차">오전반반차 (9~11시)</option><option value="오후반반차">오후반반차 (16~18시)</option></select></div>
+          <div class="form-group" style="margin-bottom:0"><label>휴가 종류</label><select id="t1" disabled><option value="">선택</option><option value="연차휴가">연차휴가 (종일)</option><option value="오전연차">오전연차 (9~14시)</option><option value="오후연차">오후연차 (14~18시)</option><option value="오전반반차">오전반반차 (9~11시)</option><option value="오후반반차">오후반반차 (16~18시)</option><option value="건강검진">건강검진 (9~14시)</option></select></div>
         </div>
       </div>
       <div class="ab-block ab-block-2">
         <div class="ab-header"><span class="nb nb-2">2</span>휴가자 2</div>
         <div class="form-row">
           <div class="form-group" style="margin-bottom:0"><label>이름</label><select id="n2"><option value="">선택 안함</option></select></div>
-          <div class="form-group" style="margin-bottom:0"><label>휴가 종류</label><select id="t2" disabled><option value="">선택</option><option value="연차휴가">연차휴가 (종일)</option><option value="오전연차">오전연차 (9~14시)</option><option value="오후연차">오후연차 (14~18시)</option><option value="오전반반차">오전반반차 (9~11시)</option><option value="오후반반차">오후반반차 (16~18시)</option></select></div>
+          <div class="form-group" style="margin-bottom:0"><label>휴가 종류</label><select id="t2" disabled><option value="">선택</option><option value="연차휴가">연차휴가 (종일)</option><option value="오전연차">오전연차 (9~14시)</option><option value="오후연차">오후연차 (14~18시)</option><option value="오전반반차">오전반반차 (9~11시)</option><option value="오후반반차">오후반반차 (16~18시)</option><option value="건강검진">건강검진 (9~14시)</option></select></div>
         </div>
       </div>
       <div class="ab-block ab-block-3">
         <div class="ab-header"><span class="nb nb-3">3</span>휴가자 3</div>
         <div class="form-row">
           <div class="form-group" style="margin-bottom:0"><label>이름</label><select id="n3"><option value="">선택 안함</option></select></div>
-          <div class="form-group" style="margin-bottom:0"><label>휴가 종류</label><select id="t3" disabled><option value="">선택</option><option value="연차휴가">연차휴가 (종일)</option><option value="오전연차">오전연차 (9~14시)</option><option value="오후연차">오후연차 (14~18시)</option><option value="오전반반차">오전반반차 (9~11시)</option><option value="오후반반차">오후반반차 (16~18시)</option></select></div>
+          <div class="form-group" style="margin-bottom:0"><label>휴가 종류</label><select id="t3" disabled><option value="">선택</option><option value="연차휴가">연차휴가 (종일)</option><option value="오전연차">오전연차 (9~14시)</option><option value="오후연차">오후연차 (14~18시)</option><option value="오전반반차">오전반반차 (9~11시)</option><option value="오후반반차">오후반반차 (16~18시)</option><option value="건강검진">건강검진 (9~14시)</option></select></div>
         </div>
       </div>
       <div class="ab-block ab-block-4">
         <div class="ab-header"><span class="nb nb-4">4</span>휴가자 4</div>
         <div class="form-row">
           <div class="form-group" style="margin-bottom:0"><label>이름</label><select id="n4"><option value="">선택 안함</option></select></div>
-          <div class="form-group" style="margin-bottom:0"><label>휴가 종류</label><select id="t4" disabled><option value="">선택</option><option value="연차휴가">연차휴가 (종일)</option><option value="오전연차">오전연차 (9~14시)</option><option value="오후연차">오후연차 (14~18시)</option><option value="오전반반차">오전반반차 (9~11시)</option><option value="오후반반차">오후반반차 (16~18시)</option></select></div>
+          <div class="form-group" style="margin-bottom:0"><label>휴가 종류</label><select id="t4" disabled><option value="">선택</option><option value="연차휴가">연차휴가 (종일)</option><option value="오전연차">오전연차 (9~14시)</option><option value="오후연차">오후연차 (14~18시)</option><option value="오전반반차">오전반반차 (9~11시)</option><option value="오후반반차">오후반반차 (16~18시)</option><option value="건강검진">건강검진 (9~14시)</option></select></div>
         </div>
       </div>
       <button class="btn btn-gen" onclick="generate()">▶ 업무대행표 생성</button>
@@ -265,19 +265,19 @@ tr.grp-sep td{border-top:2px solid #dce5f0}
       <div id="editDateLabel" class="modal-date-label"></div>
       <div class="ab-block ab-block-1" style="margin-bottom:8px">
         <div class="ab-header"><span class="nb nb-1">1</span>휴가자 1</div>
-        <div class="form-row"><div class="form-group" style="margin-bottom:0"><label>이름</label><select id="en1"><option value="">선택 안함</option></select></div><div class="form-group" style="margin-bottom:0"><label>휴가 종류</label><select id="et1" disabled><option value="">선택</option><option value="연차휴가">연차휴가</option><option value="오전연차">오전연차</option><option value="오후연차">오후연차</option><option value="오전반반차">오전반반차</option><option value="오후반반차">오후반반차</option></select></div></div>
+        <div class="form-row"><div class="form-group" style="margin-bottom:0"><label>이름</label><select id="en1"><option value="">선택 안함</option></select></div><div class="form-group" style="margin-bottom:0"><label>휴가 종류</label><select id="et1" disabled><option value="">선택</option><option value="연차휴가">연차휴가</option><option value="오전연차">오전연차</option><option value="오후연차">오후연차</option><option value="오전반반차">오전반반차</option><option value="오후반반차">오후반반차</option><option value="건강검진">건강검진</option></select></div></div>
       </div>
       <div class="ab-block ab-block-2" style="margin-bottom:8px">
         <div class="ab-header"><span class="nb nb-2">2</span>휴가자 2</div>
-        <div class="form-row"><div class="form-group" style="margin-bottom:0"><label>이름</label><select id="en2"><option value="">선택 안함</option></select></div><div class="form-group" style="margin-bottom:0"><label>휴가 종류</label><select id="et2" disabled><option value="">선택</option><option value="연차휴가">연차휴가</option><option value="오전연차">오전연차</option><option value="오후연차">오후연차</option><option value="오전반반차">오전반반차</option><option value="오후반반차">오후반반차</option></select></div></div>
+        <div class="form-row"><div class="form-group" style="margin-bottom:0"><label>이름</label><select id="en2"><option value="">선택 안함</option></select></div><div class="form-group" style="margin-bottom:0"><label>휴가 종류</label><select id="et2" disabled><option value="">선택</option><option value="연차휴가">연차휴가</option><option value="오전연차">오전연차</option><option value="오후연차">오후연차</option><option value="오전반반차">오전반반차</option><option value="오후반반차">오후반반차</option><option value="건강검진">건강검진</option></select></div></div>
       </div>
       <div class="ab-block ab-block-3" style="margin-bottom:8px">
         <div class="ab-header"><span class="nb nb-3">3</span>휴가자 3</div>
-        <div class="form-row"><div class="form-group" style="margin-bottom:0"><label>이름</label><select id="en3"><option value="">선택 안함</option></select></div><div class="form-group" style="margin-bottom:0"><label>휴가 종류</label><select id="et3" disabled><option value="">선택</option><option value="연차휴가">연차휴가</option><option value="오전연차">오전연차</option><option value="오후연차">오후연차</option><option value="오전반반차">오전반반차</option><option value="오후반반차">오후반반차</option></select></div></div>
+        <div class="form-row"><div class="form-group" style="margin-bottom:0"><label>이름</label><select id="en3"><option value="">선택 안함</option></select></div><div class="form-group" style="margin-bottom:0"><label>휴가 종류</label><select id="et3" disabled><option value="">선택</option><option value="연차휴가">연차휴가</option><option value="오전연차">오전연차</option><option value="오후연차">오후연차</option><option value="오전반반차">오전반반차</option><option value="오후반반차">오후반반차</option><option value="건강검진">건강검진</option></select></div></div>
       </div>
       <div class="ab-block ab-block-4">
         <div class="ab-header"><span class="nb nb-4">4</span>휴가자 4</div>
-        <div class="form-row"><div class="form-group" style="margin-bottom:0"><label>이름</label><select id="en4"><option value="">선택 안함</option></select></div><div class="form-group" style="margin-bottom:0"><label>휴가 종류</label><select id="et4" disabled><option value="">선택</option><option value="연차휴가">연차휴가</option><option value="오전연차">오전연차</option><option value="오후연차">오후연차</option><option value="오전반반차">오전반반차</option><option value="오후반반차">오후반반차</option></select></div></div>
+        <div class="form-row"><div class="form-group" style="margin-bottom:0"><label>이름</label><select id="en4"><option value="">선택 안함</option></select></div><div class="form-group" style="margin-bottom:0"><label>휴가 종류</label><select id="et4" disabled><option value="">선택</option><option value="연차휴가">연차휴가</option><option value="오전연차">오전연차</option><option value="오후연차">오후연차</option><option value="오전반반차">오전반반차</option><option value="오후반반차">오후반반차</option><option value="건강검진">건강검진</option></select></div></div>
       </div>
     </div>
     <div class="modal-foot">
@@ -304,6 +304,7 @@ tr.grp-sep td{border-top:2px solid #dce5f0}
           <option value="오후연차">오후연차 (14~18시)</option>
           <option value="오전반반차">오전반반차 (9~11시)</option>
           <option value="오후반반차">오후반반차 (16~18시)</option>
+          <option value="건강검진">건강검진 (9~14시)</option>
         </select>
       </div>
     </div>
@@ -343,8 +344,8 @@ tr.grp-sep td{border-top:2px solid #dce5f0}
 <script>
 const MEMBERS=['전혜숙','윤지연','허미남','라현선','채문정','박대석','이윤장','김경옥','박신선','이덕실','박경아'];
 const DAYS=['일','월','화','수','목','금','토'];
-const SLOTS={'연차휴가':[9,10,11,13,14,15,16,17],'오전연차':[9,10,11,13],'오후연차':[14,15,16,17],'오전반반차':[9,10],'오후반반차':[16,17]};
-const BADGE={'연차휴가':'b-red','오전연차':'b-blue','오후연차':'b-orange','오전반반차':'b-green','오후반반차':'b-purple'};
+const SLOTS={'연차휴가':[9,10,11,13,14,15,16,17],'오전연차':[9,10,11,13],'오후연차':[14,15,16,17],'오전반반차':[9,10],'오후반반차':[16,17],'건강검진':[9,10,11,13,14]};
+const BADGE={'연차휴가':'b-red','오전연차':'b-blue','오후연차':'b-orange','오전반반차':'b-green','오후반반차':'b-purple','건강검진':'b-teal'};
 const SK='wca_v3', IK='wca_imp', FK='wca_fd', VK='wca_vac';
 let _lastCov=null;
 
@@ -1266,9 +1267,9 @@ function delFDEntry(id){
 }
 
 // ── Vacation Calendar ─────────────────────────────────
-const VT_BG={'연차휴가':'#fee2e2','오전연차':'#dbeafe','오후연차':'#ffedd5','오전반반차':'#d1fae5','오후반반차':'#ede9fe'};
-const VT_TC={'연차휴가':'#b91c1c','오전연차':'#1d4ed8','오후연차':'#c2410c','오전반반차':'#065f46','오후반반차':'#6d28d9'};
-const VT_SHORT={'연차휴가':'연차','오전연차':'오전연차','오후연차':'오후연차','오전반반차':'오전반반','오후반반차':'오후반반'};
+const VT_BG={'연차휴가':'#fee2e2','오전연차':'#dbeafe','오후연차':'#ffedd5','오전반반차':'#d1fae5','오후반반차':'#ede9fe','건강검진':'#ccfbf1'};
+const VT_TC={'연차휴가':'#b91c1c','오전연차':'#1d4ed8','오후연차':'#c2410c','오전반반차':'#065f46','오후반반차':'#6d28d9','건강검진':'#0f766e'};
+const VT_SHORT={'연차휴가':'연차','오전연차':'오전연차','오후연차':'오후연차','오전반반차':'오전반반','오후반반차':'오후반반','건강검진':'건강검진'};
 let _vcY,_vcM;
 
 function initVacCal(){
