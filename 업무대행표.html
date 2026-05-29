@@ -1399,7 +1399,7 @@ function saveVacEntry(){
     saveVac(entries);showToast('수정되었습니다.');
   }else{
     if(entries.filter(e=>e.date===date).length>=7){showToast('해당 날짜는 이미 7명이 등록되어 있습니다.');closeVacModal();return;}
-    if(entries.some(e=>e.date===date&&e.name===name)){showToast(`${name}님은 이미 해당 날짜에 등록되어 있습니다.`);return;}
+    if(entries.filter(e=>e.date===date&&e.name===name).length>=2){showToast(`${name}님은 이미 해당 날짜에 2건 등록되어 있습니다.`);return;}
     entries.push({id:`vac-${date}-${Date.now()}`,date,name,leaveType});
     saveVac(entries);showToast('휴가가 등록되었습니다.');
   }
