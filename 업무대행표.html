@@ -224,6 +224,7 @@ tr.grp-sep td{border-top:2px solid #dce5f0}
     </div>
     <div class="card">
       <div class="card-title"><span class="ctbar"></span><span id="teamChipsTitle">팀원 이번달 현황</span></div>
+      <div id="teamChipsAvg" style="font-size:11px;color:#5a6a7e;margin-bottom:6px"></div>
       <div id="teamChips" class="team-chips"></div>
     </div>
   </div>
@@ -664,6 +665,11 @@ function renderTeamChips(sessHours){
   const mh=(buildMonthlyData(d.history||[]))[curYM]||{};
   const titleEl=document.getElementById('teamChipsTitle');
   if(titleEl)titleEl.textContent=`팀원 ${_cm+1}월 현황`;
+  const _cnt={};MEMBERS.forEach(m=>_cnt[m]=0);
+  (d.history||[]).filter(e=>e.date&&e.date.startsWith(curYM)).forEach(e=>(e.assignments||[]).forEach(a=>{if(_cnt[a.assignee]!==undefined)_cnt[a.assignee]++;}));
+  const avgCnt=(MEMBERS.reduce((s,m)=>s+(_cnt[m]||0),0)/MEMBERS.length).toFixed(1);
+  const avgEl=document.getElementById('teamChipsAvg');
+  if(avgEl)avgEl.innerHTML=`📋 평균 업무대행 수: <strong>${avgCnt}건</strong> &nbsp;·&nbsp; <span style="color:#dc2626;font-weight:600">➖ 팀 평균 미달</span> &nbsp; <span style="color:#059669;font-weight:600">➕ 팀 평균 이상</span>`;
   const monthTotal=MEMBERS.reduce((s,m)=>s+(mh[m]||0),0);
   const hasData=monthTotal>0;
   const monthAvg=hasData?monthTotal/MEMBERS.length:0;
