@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JK기업영업2팀 업무(자동누적)대행표</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Malgun Gothic','맑은 고딕',-apple-system,BlinkMacSystemFont,sans-serif;background:#e8edf5;color:#1a2840;min-height:100vh;font-size:14px;-webkit-font-smoothing:antialiased}
@@ -174,7 +176,7 @@ tr.grp-sep td{border-top:2px solid #dce5f0}
 <body>
 
 <header class="app-header">
-  <div><h1>JK기업영업2팀 업무(자동누적)대행표</h1><p>11명 팀원 · 최대 4명 동시 휴가 · 연속 시간 블록 배정</p></div>
+  <div><h1>JK기업영업2팀 업무(자동누적)대행표</h1><p>11명 팀원 · 최대 4명 동시 휴가 · 연속 시간 블록 배정 &nbsp;<span id="fbStatus" style="font-size:11px;opacity:.8">⏳ 연결 중...</span></p></div>
   <div class="header-btns">
     <button class="btn btn-share" onclick="openShareModal()">🔗 공유 링크</button>
     <button class="btn btn-hdr" onclick="window.print()">🖨 인쇄</button>
@@ -346,9 +348,60 @@ const BADGE={'연차휴가':'b-red','오전연차':'b-blue','오후연차':'b-or
 const SK='wca_v3', IK='wca_imp', FK='wca_fd', VK='wca_vac';
 let _lastCov=null;
 
+// ── Firebase 실시간 동기화 ────────────────────────────
+// console.firebase.google.com → 프로젝트 생성 후 아래 값을 교체하세요
+const FB_CONFIG={
+  apiKey:            "REPLACE_API_KEY",
+  authDomain:        "REPLACE_PROJECT.firebaseapp.com",
+  databaseURL:       "https://REPLACE_PROJECT-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:         "REPLACE_PROJECT",
+  storageBucket:     "REPLACE_PROJECT.appspot.com",
+  messagingSenderId: "REPLACE_SENDER_ID",
+  appId:             "REPLACE_APP_ID"
+};
+const FB_READY=!FB_CONFIG.apiKey.startsWith('REPLACE');
+let _db=null,_dataRef=null,_fdRef=null,_vacRef=null;
+let _fbCache=null; // 메모리 캐시
+
+function _fbStatus(msg,ok){
+  const el=document.getElementById('fbStatus');
+  if(el)el.textContent=msg,el.style.color=ok===true?'#86efac':ok===false?'#fca5a5':'';
+}
+
 // ── Data ──────────────────────────────────────────────
-function load(){try{const d=localStorage.getItem(SK);if(d)return JSON.parse(d);}catch(e){}return{hours:Object.fromEntries(MEMBERS.map(m=>[m,0])),history:[]};}
-function save(d){localStorage.setItem(SK,JSON.stringify(d));}
+function load(){
+  if(_fbCache!==null)return JSON.parse(JSON.stringify(_fbCache));
+  try{const d=localStorage.getItem(SK);if(d)return JSON.parse(d);}catch(e){}
+  return{hours:Object.fromEntries(MEMBERS.map(m=>[m,0])),history:[]};
+}
+function save(d){
+  _fbCache=d;
+  localStorage.setItem(SK,JSON.stringify(d));
+  if(_dataRef)_dataRef.set(d).catch(()=>_fbStatus('⚠️ 저장 실패',false));
+}
+function loadFD(){
+  try{const d=localStorage.getItem(FK);if(d)return JSON.parse(d);}catch(e){}return[];
+}
+function saveFD(d){
+  localStorage.setItem(FK,JSON.stringify(d));
+  if(_fdRef)_fdRef.set(d).catch(()=>{});
+}
+function loadVac(){
+  try{const d=localStorage.getItem(VK);if(d)return JSON.parse(d);}catch(e){}return[];
+}
+function saveVac(d){
+  localStorage.setItem(VK,JSON.stringify(d));
+  if(_vacRef)_vacRef.set(d).catch(()=>{});
+}
+
+// Firebase 원격 변경 시 현재 탭 재렌더
+function _rerenderActive(data){
+  renderTeamChips(null);
+  const tabId=(document.querySelector('.tab-pane.active')||{}).id||'';
+  if(tabId==='tab-cum')rerenderCum(data,null);
+  else if(tabId==='tab-hist')document.getElementById('histContent').innerHTML=renderHistory(data.history);
+  else if(tabId==='tab-fd')renderFamilyDay();
+}
 
 // ── Consecutive block algorithm ───────────────────────
 function groupConsecutive(slots){
@@ -1085,8 +1138,6 @@ function downloadExcel(){
 }
 
 // ── Family Day ────────────────────────────────────────
-function loadFD(){try{const d=localStorage.getItem(FK);if(d)return JSON.parse(d);}catch(e){}return[];}
-function saveFD(d){localStorage.setItem(FK,JSON.stringify(d));}
 
 function renderFamilyDay(){
   const entries=loadFD();
@@ -1219,9 +1270,6 @@ const VT_BG={'연차휴가':'#fee2e2','오전연차':'#dbeafe','오후연차':'#
 const VT_TC={'연차휴가':'#b91c1c','오전연차':'#1d4ed8','오후연차':'#c2410c','오전반반차':'#065f46','오후반반차':'#6d28d9'};
 const VT_SHORT={'연차휴가':'연차','오전연차':'오전연차','오후연차':'오후연차','오전반반차':'오전반반','오후반반차':'오후반반'};
 let _vcY,_vcM;
-
-function loadVac(){try{const d=localStorage.getItem(VK);if(d)return JSON.parse(d);}catch(e){}return[];}
-function saveVac(d){localStorage.setItem(VK,JSON.stringify(d));}
 
 function initVacCal(){
   const t=new Date();_vcY=t.getFullYear();_vcM=t.getMonth();
@@ -1396,8 +1444,43 @@ function showToast(msg){
 
 // ── Init (async) ──────────────────────────────────────
 (async function init(){
+  // Firebase 초기화
+  if(FB_READY){
+    try{
+      if(!firebase.apps.length)firebase.initializeApp(FB_CONFIG);
+      _db=firebase.database();
+      _dataRef=_db.ref('wca_v3');
+      _fdRef=_db.ref('wca_fd');
+      _vacRef=_db.ref('wca_vac');
+
+      // 최초 데이터 로드 (Firebase → 메모리 캐시)
+      await new Promise(resolve=>{
+        _dataRef.once('value',snap=>{
+          const v=snap.val();
+          if(v){_fbCache=v;localStorage.setItem(SK,JSON.stringify(v));}
+          resolve();
+        }).catch(resolve);
+      });
+
+      // 실시간 변경 리스너 (다른 기기 수정 시 자동 반영)
+      _dataRef.on('value',snap=>{
+        const v=snap.val();if(!v)return;
+        const changed=JSON.stringify(v)!==JSON.stringify(_fbCache);
+        _fbCache=v;localStorage.setItem(SK,JSON.stringify(v));
+        if(changed)_rerenderActive(v);
+      });
+      _fdRef.on('value',snap=>{const v=snap.val();if(v){localStorage.setItem(FK,JSON.stringify(v));renderFamilyDay();}});
+      _vacRef.on('value',snap=>{const v=snap.val();if(v){localStorage.setItem(VK,JSON.stringify(v));}});
+
+      _fbStatus('🟢 실시간 연결됨',true);
+    }catch(e){_fbStatus('⚠️ Firebase 오류',false);console.error(e);}
+  }else{
+    _fbStatus('⚠️ Firebase 미설정 (로컬 모드)',false);
+  }
+
   const urlData=await importFromURL();
-  const data=urlData||load();
+  if(urlData)save(urlData); // URL 임포트 시 Firebase에도 반영
+  const data=load();
 
   initCal();
   MEMBERS.forEach(m=>document.getElementById('vacName').innerHTML+=`<option value="${m}">${m}</option>`);
