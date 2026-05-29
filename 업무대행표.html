@@ -47,8 +47,7 @@ input[readonly]{cursor:default;color:#374151;font-size:12px}
 .btn-edit:hover{background:#fef9c3}
 .btn-clip{background:transparent;border:1.5px solid #bfdbfe;color:#1d4ed8;padding:4px 9px;font-size:11px;border-radius:6px}
 .btn-clip:hover{background:#eff6ff}
-.btn-chak{background:transparent;border:1.5px solid #6ee7b7;color:#065f46;padding:4px 9px;font-size:11px;border-radius:6px}
-.btn-chak:hover{background:#ecfdf5}
+
 .btn-excel{background:linear-gradient(135deg,#16a34a,#22c55e);color:white;border:none;padding:7px 14px;font-size:12px;border-radius:8px;box-shadow:0 2px 6px rgba(22,163,74,.3)}
 .btn-excel:hover{box-shadow:0 4px 14px rgba(22,163,74,.45);transform:translateY(-1px)}
 .btn-primary{background:linear-gradient(135deg,#1a6ec4,#3b82f6);color:white;padding:9px 20px;font-size:13px;border-radius:9px;box-shadow:0 2px 8px rgba(26,110,196,.3)}
@@ -103,8 +102,7 @@ tr.grp-sep td{border-top:2px solid #dce5f0}
 .banner-date{font-size:17px;font-weight:800}.banner-sub{font-size:11px;opacity:.8;margin-top:2px}
 .chips{display:flex;gap:5px;flex-wrap:wrap}
 .chip{background:rgba(255,255,255,.2);padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
-.chip-chak{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.45);color:white;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;text-decoration:none;white-space:nowrap}
-.chip-chak:hover{background:rgba(255,255,255,.3)}
+
 .chip-copy{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.45);color:white;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit}
 .chip-copy:hover{background:rgba(255,255,255,.3)}
 .summary-box{margin-top:14px;padding:11px 14px;background:#f8fafc;border-radius:8px;border:1px solid #e0e7ef}
@@ -468,7 +466,7 @@ function renderCoverage(date,absences,assignments){
   const summ={};
   for(const a of assignments){const h=a.hours??a.slots?.length??1;summ[a.assignee]=(summ[a.assignee]||0)+h;}
   const summChips=Object.entries(summ).map(([n,h])=>`<span class="s-chip">${n} <span style="color:#2e86c1">+${h}h</span></span>`).join('');
-  return`<div class="banner"><div><div class="banner-date">${fmtDate(date)}</div><div class="banner-sub">업무대행 일정</div></div><div class="chips">${absences.map(a=>`<span class="chip">${a.name}·${a.leaveType}</span><button class="chip-copy" onclick="copyChipSlack('${a.name}')">📋 복사</button><button class="chip-copy" onclick="delCovAbsentee('${a.name}')">🗑 삭제</button>`).join('')}<button class="chip-copy" onclick="editCovEntry()">✏️ 수정</button><a href="http://isup.jobkorea.co.kr/isjk/agentConfig.do" target="_blank" class="chip-chak">📞 착신</a></div></div>
+  return`<div class="banner"><div><div class="banner-date">${fmtDate(date)}</div><div class="banner-sub">업무대행 일정</div></div><div class="chips">${absences.map(a=>`<span class="chip">${a.name}·${a.leaveType}</span><button class="chip-copy" onclick="copyChipSlack('${a.name}')">📋 복사</button><button class="chip-copy" onclick="delCovAbsentee('${a.name}')">🗑 삭제</button>`).join('')}<button class="chip-copy" onclick="editCovEntry()">✏️ 수정</button></div></div>
   <div class="tw"><table><thead><tr><th style="width:160px">시간대 (연속 블록)</th><th>휴가자</th><th>휴가 종류</th><th>대행자</th></tr></thead><tbody>${buildRows(assignments)}</tbody></table></div>
   <div class="summary-box"><h4>이번 배정 요약</h4><div class="summary-chips">${summChips}</div></div>`;
 }
@@ -613,7 +611,7 @@ function renderHistory(history){
             <button class="btn btn-edit" onclick="event.stopPropagation();editHist('${e.id}')">✏️ 수정</button>
             <button class="btn btn-del" onclick="event.stopPropagation();delHist('${e.id}')">🗑 삭제</button>
             <button class="btn btn-clip" onclick="event.stopPropagation();copyHistEntry('${e.id}')">📋 복사</button>
-            <button class="btn btn-chak" onclick="event.stopPropagation();window.open('http://isup.jobkorea.co.kr/isjk/agentConfig.do','_blank')">📞 착신</button>
+
             <span class="hist-chev">▼</span>
           </div>
         </div>
@@ -1095,7 +1093,7 @@ function renderFamilyDay(){
             <button class="btn btn-edit" onclick="editFDEntry('${e.id}')">✏️ 수정</button>
             <button class="btn btn-del" onclick="delFDEntry('${e.id}')">🗑 삭제</button>
             <button class="btn btn-clip" onclick="copyFDEntry('${e.id}')">📋 복사</button>
-            <button class="btn btn-chak" onclick="window.open('http://isup.jobkorea.co.kr/isjk/agentConfig.do','_blank')">📞 착신</button>
+
           </div>
         </div>
         <div class="hist-body open">
