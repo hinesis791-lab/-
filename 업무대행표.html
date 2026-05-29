@@ -494,6 +494,11 @@ function renderCumulative(monthHours,sessHours,history,settled,adjMap,cumHours){
   const maxM=MEMBERS[vals.indexOf(Math.max(...vals))];
   const minM=MEMBERS[vals.indexOf(Math.min(...vals))];
   const avg=(vals.reduce((s,v)=>s+v,0)/MEMBERS.length).toFixed(1);
+  const _curYM=`${_cy}-${String(_cm+1).padStart(2,'0')}`;
+  const _curEntries=(history||[]).filter(e=>e.date&&e.date.startsWith(_curYM));
+  const _mCnt={};MEMBERS.forEach(m=>_mCnt[m]=0);
+  _curEntries.forEach(e=>(e.assignments||[]).forEach(a=>{if(_mCnt[a.assignee]!==undefined)_mCnt[a.assignee]++;}));
+  const avgCount=(_mCnt&&MEMBERS.length?MEMBERS.reduce((s,m)=>s+(_mCnt[m]||0),0)/MEMBERS.length:0).toFixed(1);
   const sorted=[...MEMBERS].sort((a,b)=>(monthHours[a]??0)-(monthHours[b]??0));
   const cards=sorted.map(m=>{
     const h=monthHours[m]??0,nh=sessHours?(sessHours[m]||0):0;
@@ -561,7 +566,14 @@ function renderCumulative(monthHours,sessHours,history,settled,adjMap,cumHours){
     </div>`;
   }
 
-  return`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+  const noticeBox=`<div style="background:#f0f7ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:12px;color:#374151;line-height:1.8">
+    <div style="font-weight:700;color:#1e3a5f;margin-bottom:6px">[${_cm+1}월 팀원 업무 현황 및 누적 현황 안내]</div>
+    <div>📋 평균 업무대행 수: <strong>${avgCount}건</strong></div>
+    <div>📌 수치 표기 안내</div>
+    <div style="margin-left:14px;color:#dc2626;font-weight:600">➖ (빨간색 마이너스): 팀 평균 미달</div>
+    <div style="margin-left:14px;color:#059669;font-weight:600">➕ (플러스): 팀 평균 이상 수행</div>
+  </div>`;
+  return noticeBox+`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
     <div><span style="font-size:13px;font-weight:700;color:#5a6a7e">${_cm+1}월 대행 시간 (적은 순)</span><div style="font-size:10px;color:#94a3b8;margin-top:2px">달력 ◀▶로 월 변경 · 하단 테이블에서 누적 잔액(+/−) 확인</div></div>
     <button class="btn btn-excel" onclick="downloadExcel()">📥 엑셀 다운로드</button>
   </div>
