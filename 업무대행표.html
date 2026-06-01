@@ -228,6 +228,11 @@ tr.grp-sep td{border-top:2px solid #e0e9f7}
 .vcal-holiday{font-size:9px;font-weight:800;color:#dc2626;background:#fee2e2;border-radius:4px;padding:1px 6px;margin-bottom:3px;display:inline-block}
 .vcal-cell.vcd-holiday{background:linear-gradient(160deg,#fff5f5,#fff0f0)}
 
+/* ── 회식 형광 효과 ── */
+.vcal-er-hoesik{box-shadow:0 0 0 2px #f59e0b,0 2px 12px rgba(245,158,11,.55)!important;border-radius:6px!important}
+.vcal-er-hoesik .vcal-ename,.vcal-er-hoesik .vcal-etype{font-weight:900!important}
+.vcal-cell.vcd-hoesik{background:linear-gradient(160deg,#fffbeb,#fef9c3)!important;border-color:#fcd34d!important;border-width:2px!important}
+
 @media print{.app-header .header-btns,.left-panel,.tabs{display:none}.container{grid-template-columns:1fr}.tab-pane{display:block!important}.card{box-shadow:none}.btn-del,.btn-edit{display:none}}
 </style>
 </head>
@@ -363,6 +368,7 @@ tr.grp-sep td{border-top:2px solid #e0e9f7}
           <option value="오전반반차">오전반반차 (9~11시)</option>
           <option value="오후반반차">오후반반차 (16~18시)</option>
           <option value="건강검진">건강검진 (9~14시)</option>
+          <option value="회식">🍻 회식 (팀 이벤트)</option>
         </select>
       </div>
     </div>
@@ -1350,10 +1356,10 @@ function delFDEntry(id){
 }
 
 // ── Vacation Calendar ─────────────────────────────────
-const VT_BG={'연차휴가':'#fff0f0','오전연차':'#eff6ff','오후연차':'#fff7ed','오전반반차':'#f0fdf4','오후반반차':'#f5f3ff','건강검진':'#f0fdfa'};
-const VT_TC={'연차휴가':'#b91c1c','오전연차':'#1d4ed8','오후연차':'#c2410c','오전반반차':'#065f46','오후반반차':'#6d28d9','건강검진':'#0f766e'};
-const VT_BD={'연차휴가':'#ef4444','오전연차':'#3b82f6','오후연차':'#f97316','오전반반차':'#10b981','오후반반차':'#8b5cf6','건강검진':'#14b8a6'};
-const VT_SHORT={'연차휴가':'연차','오전연차':'오전연차','오후연차':'오후연차','오전반반차':'오전반반','오후반반차':'오후반반','건강검진':'건강검진'};
+const VT_BG={'연차휴가':'#fff0f0','오전연차':'#eff6ff','오후연차':'#fff7ed','오전반반차':'#f0fdf4','오후반반차':'#f5f3ff','건강검진':'#f0fdfa','회식':'#fef08a'};
+const VT_TC={'연차휴가':'#b91c1c','오전연차':'#1d4ed8','오후연차':'#c2410c','오전반반차':'#065f46','오후반반차':'#6d28d9','건강검진':'#0f766e','회식':'#78350f'};
+const VT_BD={'연차휴가':'#ef4444','오전연차':'#3b82f6','오후연차':'#f97316','오전반반차':'#10b981','오후반반차':'#8b5cf6','건강검진':'#14b8a6','회식':'#f59e0b'};
+const VT_SHORT={'연차휴가':'연차','오전연차':'오전연차','오후연차':'오후연차','오전반반차':'오전반반','오후반반차':'오후반반','건강검진':'건강검진','회식':'🍻회식'};
 let _vcY,_vcM;
 
 function initVacCal(){
@@ -1381,12 +1387,14 @@ function renderVacCal(){
     const isFull=de.length>=7;
     const isToday=ds===todayStr;
     const holiday=getHoliday(ds);
+    const hasHoesik=de.some(e=>e.leaveType==='회식');
     let cls='vcal-cell';
     if(isToday)cls+=' vcd-today';else if(holiday)cls+=' vcd-holiday';else if(dw===0||dw===6)cls+=' vcd-we';
+    if(hasHoesik)cls+=' vcd-hoesik';
     if(isFull)cls+=' vcd-full';
     const dnCls='vcal-dn '+(isToday?'vdn-today':dw===0?'vdn-sun':dw===6?'vdn-sat':'vdn-wd');
     const holidayTag=holiday?`<div class="vcal-holiday">🎌 ${holiday}</div>`:'';
-    const erHtml=de.map(e=>`<div class="vcal-er" style="background:${VT_BG[e.leaveType]||'#f8fafc'};border-left-color:${VT_BD[e.leaveType]||'#94a3b8'}">
+    const erHtml=de.map(e=>`<div class="vcal-er${e.leaveType==='회식'?' vcal-er-hoesik':''}" style="background:${VT_BG[e.leaveType]||'#f8fafc'};border-left-color:${VT_BD[e.leaveType]||'#94a3b8'}">
       <span class="vcal-ename" style="color:${VT_TC[e.leaveType]||'#374151'}">${e.name}</span>
       <span class="vcal-etype" style="color:${VT_TC[e.leaveType]||'#5a6a7e'}">${VT_SHORT[e.leaveType]||e.leaveType}</span>
       <div class="vcal-ebtns">
