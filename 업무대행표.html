@@ -439,9 +439,22 @@ function _fbStatus(msg,ok){
 }
 
 // ── Data ──────────────────────────────────────────────
+// Firebase는 배열을 {"0":...,"1":...} 객체로 변환하므로 로드 시 배열로 정규화
+function _normalizeData(d){
+  if(!d)return{hours:Object.fromEntries(MEMBERS.map(m=>[m,0])),history:[]};
+  if(!d.hours)d.hours=Object.fromEntries(MEMBERS.map(m=>[m,0]));
+  if(!Array.isArray(d.history))d.history=d.history?Object.values(d.history):[];
+  d.history=d.history.map(e=>{
+    const absences=Array.isArray(e.absences)?e.absences:Object.values(e.absences||{});
+    const rawAsgn=Array.isArray(e.assignments)?e.assignments:Object.values(e.assignments||{});
+    const assignments=rawAsgn.map(a=>({...a,slots:Array.isArray(a.slots)?a.slots:Object.values(a.slots||{})}));
+    return{...e,absences,assignments};
+  });
+  return d;
+}
 function load(){
-  if(_fbCache!==null)return JSON.parse(JSON.stringify(_fbCache));
-  try{const d=localStorage.getItem(SK);if(d)return JSON.parse(d);}catch(e){}
+  if(_fbCache!==null)return _normalizeData(JSON.parse(JSON.stringify(_fbCache)));
+  try{const d=localStorage.getItem(SK);if(d)return _normalizeData(JSON.parse(d));}catch(e){}
   return{hours:Object.fromEntries(MEMBERS.map(m=>[m,0])),history:[]};
 }
 function save(d){
@@ -1534,14 +1547,15 @@ function showToast(msg){
       await new Promise(resolve=>{
         _dataRef.once('value',snap=>{
           const v=snap.val();
-          if(v){_fbCache=v;localStorage.setItem(SK,JSON.stringify(v));}
+          if(v){const n=_normalizeData(v);_fbCache=n;localStorage.setItem(SK,JSON.stringify(n));}
           resolve();
         }).catch(resolve);
       });
 
       // 실시간 변경 리스너 (다른 기기 수정 시 자동 반영)
       _dataRef.on('value',snap=>{
-        const v=snap.val();if(!v)return;
+        const raw=snap.val();if(!raw)return;
+        const v=_normalizeData(raw);
         const changed=JSON.stringify(v)!==JSON.stringify(_fbCache);
         _fbCache=v;localStorage.setItem(SK,JSON.stringify(v));
         if(changed)_rerenderActive(v);
