@@ -358,9 +358,9 @@ tr.grp-sep td{border-top:2px solid #e0e9f7}
       <input type="hidden" id="vacEditId">
       <input type="hidden" id="vacDateHidden">
       <div id="vacDateLabel" class="modal-date-label"></div>
-      <div class="form-group"><label>이름</label><select id="vacName"><option value="">선택</option></select></div>
+      <div class="form-group" id="vacNameGroup"><label>이름</label><select id="vacName"><option value="">선택</option></select></div>
       <div class="form-group"><label>휴가 종류</label>
-        <select id="vacType">
+        <select id="vacType" onchange="onVacTypeChange(this.value)">
           <option value="">선택</option>
           <option value="연차휴가">연차휴가 (종일)</option>
           <option value="오전연차">오전연차 (9~14시)</option>
@@ -1437,6 +1437,7 @@ function openVacAdd(date){
   document.getElementById('vacDateHidden').value=date;
   document.getElementById('vacName').value='';
   document.getElementById('vacType').value='';
+  onVacTypeChange('');
   document.getElementById('vacModal').classList.add('open');
 }
 
@@ -1446,19 +1447,32 @@ function openVacEdit(id){
   document.getElementById('vacModalTitle').textContent='✏️ 휴가 수정';
   document.getElementById('vacDateLabel').innerHTML=`📅 날짜: <strong>${fmtDate(e.date)}</strong>`;
   document.getElementById('vacDateHidden').value=e.date;
-  document.getElementById('vacName').value=e.name;
+  document.getElementById('vacName').value=e.name==='팀전체'?'':e.name;
   document.getElementById('vacType').value=e.leaveType;
+  onVacTypeChange(e.leaveType);
   document.getElementById('vacModal').classList.add('open');
 }
 
 function closeVacModal(){document.getElementById('vacModal').classList.remove('open');}
 
+function onVacTypeChange(type){
+  const grp=document.getElementById('vacNameGroup');
+  const sel=document.getElementById('vacName');
+  if(type==='회식'){
+    grp.style.opacity='.4';grp.style.pointerEvents='none';
+    sel.value='';
+  }else{
+    grp.style.opacity='1';grp.style.pointerEvents='';
+  }
+}
+
 function saveVacEntry(){
-  const name=document.getElementById('vacName').value;
   const leaveType=document.getElementById('vacType').value;
+  const rawName=document.getElementById('vacName').value;
+  const name=leaveType==='회식'?(rawName||'팀전체'):rawName;
   const date=document.getElementById('vacDateHidden').value;
   const editId=document.getElementById('vacEditId').value;
-  if(!name){showToast('이름을 선택해주세요.');return;}
+  if(!name&&leaveType!=='회식'){showToast('이름을 선택해주세요.');return;}
   if(!leaveType){showToast('휴가 종류를 선택해주세요.');return;}
   const entries=loadVac();
   if(editId){
