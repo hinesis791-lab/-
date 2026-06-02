@@ -1556,6 +1556,14 @@ function selCalDate(ds){
   document.getElementById('dateInput').value=ds;
   renderCal();
   clearAbsenteeForm();
+  const entry=load().history.find(e=>e.date===ds);
+  if(entry){
+    _lastCov={date:entry.date,absences:entry.absences,assignments:entry.assignments,histId:entry.id};
+    document.getElementById('covContent').innerHTML=renderCoverage(entry.date,entry.absences,entry.assignments);
+  }else{
+    _lastCov=null;
+    document.getElementById('covContent').innerHTML=`<div class="empty"><svg width="56" height="56" viewBox="0 0 56 56" fill="none" style="opacity:.3;margin-bottom:10px"><rect x="9" y="7" width="38" height="42" rx="4" stroke="#94a3b8" stroke-width="2.5"/><line x1="17" y1="19" x2="39" y2="19" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/><line x1="17" y1="27" x2="39" y2="27" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/><line x1="17" y1="35" x2="30" y2="35" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/></svg><p>대행표가 없습니다</p><small>날짜와 휴가자를 선택 후 생성하세요</small></div>`;
+  }
 }
 
 // ── Toast ─────────────────────────────────────────────
