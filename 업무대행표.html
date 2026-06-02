@@ -483,9 +483,20 @@ function saveVac(d){
   if(_vacRef)_vacRef.set(d).catch(()=>{});
 }
 
+// 오늘 이력이 있으면 '오늘의 대행표'에 표시 (세션 중 생성 건 덮어쓰지 않음)
+function showTodayCov(data){
+  const todayStr=new Date().toISOString().slice(0,10);
+  const entry=data.history.find(e=>e.date===todayStr);
+  if(entry){
+    _lastCov={date:entry.date,absences:entry.absences,assignments:entry.assignments,histId:entry.id};
+    document.getElementById('covContent').innerHTML=renderCoverage(entry.date,entry.absences,entry.assignments);
+  }
+}
+
 // Firebase 원격 변경 시 현재 탭 재렌더
 function _rerenderActive(data){
   renderTeamChips(null);
+  showTodayCov(data);
   const tabId=(document.querySelector('.tab-pane.active')||{}).id||'';
   if(tabId==='tab-cum')rerenderCum(data,null);
   else if(tabId==='tab-hist')document.getElementById('histContent').innerHTML=renderHistory(data.history);
@@ -1622,6 +1633,7 @@ function showToast(msg){
   document.getElementById('histContent').innerHTML=renderHistory(data.history);
   renderFamilyDay();
   renderTeamChips(null);
+  showTodayCov(data);
 })();
 </script>
 </body>
