@@ -563,22 +563,8 @@ function calcCoverage(absences,cumHours){
     for(const seq of seqs)assignSeq(seq,ab);
   }
 
-  // Redistribute: ensure every available member gets at least one assignment
-  // by splitting the largest remaining blocks for unassigned members
-  const assigned=new Set(result.map(r=>r.assignee));
-  const needWork=sortH(avail.filter(m=>!assigned.has(m)));
-  for(const who of needWork){
-    const cand=result.map((r,i)=>({i,len:r.slots.length})).filter(x=>x.len>1).sort((a,b)=>b.len-a.len);
-    if(!cand.length)break;
-    const {i}=cand[0];
-    const t=result[i];
-    const mid=Math.ceil(t.slots.length/2);
-    const first=t.slots.slice(0,mid),second=t.slots.slice(mid);
-    result[i]={...t,slots:first,slotLabel:blockLabel(first),hours:first.length};
-    result.push({slots:second,slotLabel:blockLabel(second),absentee:t.absentee,leaveType:t.leaveType,assignee:who,hours:second.length});
-    sess[t.assignee]-=second.length;
-    sess[who]=(sess[who]||0)+second.length;
-  }
+  // 재분배 없음 — sortH가 누적시간 최솟값 순으로 배정하므로
+  // 부족한 사람이 연속 블록을 통째로 가져가 자연스럽게 균등화됨
 
   // Sort by start slot, then by absentee order
   result.sort((a,b)=>{
