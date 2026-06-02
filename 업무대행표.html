@@ -752,10 +752,12 @@ function renderHistory(history){
     const[y,mo]=ym.split('-');
     const folderH=entries.reduce((s,e)=>s+e.assignments.reduce((ss,a)=>ss+(a.hours??a.slots?.length??1),0),0);
     const isOpen=ym===curYM;
+    const todayStr=new Date().toISOString().slice(0,10);
     const entriesHtml=entries.map(e=>{
       const meta=e.absences.map(a=>`${a.name}(${a.leaveType})`).join(', ');
       const eH=e.assignments.reduce((s,a)=>s+(a.hours??a.slots?.length??1),0);
-      return`<div class="hist-entry" id="he-${e.id}">
+      const isToday=e.date===todayStr;
+      return`<div class="hist-entry${isToday?' open':''}" id="he-${e.id}">
         <div class="hist-hdr" onclick="toggleHist('${e.id}')">
           <div><div class="hist-date">${fmtDate(e.date)}</div><div class="hist-meta">${meta} · 총 ${eH}시간</div></div>
           <div class="hist-acts">
@@ -767,7 +769,7 @@ function renderHistory(history){
             <span class="hist-chev">▼</span>
           </div>
         </div>
-        <div class="hist-body" id="hb-${e.id}">
+        <div class="hist-body${isToday?' open':''}" id="hb-${e.id}">
           <div class="tw"><table><thead><tr><th style="width:160px">시간대</th><th>휴가자</th><th>휴가 종류</th><th>대행자</th></tr></thead><tbody>${buildRows(e.assignments)}</tbody></table></div>
         </div>
       </div>`;
