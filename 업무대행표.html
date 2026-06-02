@@ -505,10 +505,13 @@ function _rerenderActive(data){
 
 // ── Consecutive block algorithm ───────────────────────
 function groupConsecutive(slots){
+  // 슬롯 배열 내 위치 기준으로 인접성 판단 (11→13 점심 갭도 연속으로 처리)
+  const ALL=[9,10,11,13,14,15,16,17];
   if(!slots.length)return[];
   const g=[];let c=[slots[0]];
   for(let i=1;i<slots.length;i++){
-    if(slots[i]===slots[i-1]+1)c.push(slots[i]);
+    const pi=ALL.indexOf(slots[i-1]),ci=ALL.indexOf(slots[i]);
+    if(ci===pi+1)c.push(slots[i]);
     else{g.push(c);c=[slots[i]];}
   }
   g.push(c);return g;
@@ -535,17 +538,38 @@ function calcCoverage(absences,cumHours){
 
   // 슬롯 시간 순서대로 물채우기: 가장 누적시간 낮은 사람부터 배정
   const triples=[]; // {slot, ab, who}
+  const lastCover={}; // ab.name → 직전 슬롯 담당자 (연속 구간 유지)
+
   for(const slot of ALL_SLOTS){
     const needs=slotNeeds[slot];
     if(!needs) continue;
-    const sorted=[...avail].sort((a,b)=>{
-      const ha=h[a]||0,hb=h[b]||0;
-      return ha!==hb?ha-hb:MEMBERS.indexOf(a)-MEMBERS.indexOf(b);
-    });
-    for(let i=0;i<needs.length&&i<sorted.length;i++){
-      const who=sorted[i];
-      triples.push({slot,ab:needs[i],who});
-      h[who]=(h[who]||0)+1;
+
+    const assigned=new Set();
+    const minH=Math.min(...avail.map(m=>h[m]||0));
+
+    for(const ab of needs){
+      const prev=lastCover[ab.name];
+      // 직전 담당자가 최소 누적시간+1 이하이면 연속 배정 유지
+      const usePrev=prev&&!assigned.has(prev)&&(h[prev]||0)<=minH+1;
+
+      let who;
+      if(usePrev){
+        who=prev;
+      }else{
+        who=avail
+          .filter(m=>!assigned.has(m))
+          .sort((a,b)=>{
+            const ha=h[a]||0,hb=h[b]||0;
+            return ha!==hb?ha-hb:MEMBERS.indexOf(a)-MEMBERS.indexOf(b);
+          })[0];
+      }
+
+      if(who){
+        triples.push({slot,ab,who});
+        h[who]=(h[who]||0)+1;
+        lastCover[ab.name]=who;
+        assigned.add(who);
+      }
     }
   }
 
