@@ -522,47 +522,46 @@ function blockLabel(seq){
 function calcCoverage(absences,cumHours){
   const absentSet=new Set(absences.map(a=>a.name));
   const avail=MEMBERS.filter(m=>!absentSet.has(m));
-  const sess=Object.fromEntries(MEMBERS.map(m=>[m,0]));
-  const busyAt=Object.fromEntries(avail.map(m=>[m,new Set()]));
-  const result=[];
+  // 시간 순서로 슬롯을 처리해 같은 사람이 연속된 시간을 받도록 보장
+  const h=Object.fromEntries(avail.map(m=>[m,cumHours[m]||0]));
 
-  function effH(m){return(cumHours[m]||0)+sess[m];}
-  function sortH(arr){
-    return[...arr].sort((a,b)=>{
-      const ha=effH(a),hb=effH(b);
-      return ha!==hb?ha-hb:MEMBERS.indexOf(a)-MEMBERS.indexOf(b);
-    });
+  const ALL_SLOTS=[9,10,11,13,14,15,16,17];
+  // 각 슬롯에서 대행이 필요한 휴가자 목록
+  const slotNeeds={};
+  for(const slot of ALL_SLOTS){
+    const needs=absences.filter(ab=>SLOTS[ab.leaveType].includes(slot));
+    if(needs.length) slotNeeds[slot]=needs;
   }
 
-  // 물채우기(water-filling): 누적시간 최솟값 순 정렬 → 가장 부족한 사람이
-  // 바로 위 사람의 수준까지만 슬롯을 받고, 나머지는 다음 사람에게 넘김
-  for(const ab of absences){
-    let remaining=[...SLOTS[ab.leaveType]];
-    while(remaining.length>0){
-      // remaining[0] 슬롯에서 가능한 사람만 추려 누적시간 오름차순 정렬
-      const free=sortH(avail.filter(m=>!busyAt[m].has(remaining[0])));
-      if(!free.length){remaining.shift();continue;}
-      const who=free[0];
-      const myH=effH(who);
-      const nextH=free.length>1?effH(free[1]):myH+1;
-      // 다음 사람 수준까지 채울 슬롯 수 (최소 1)
-      const needed=Math.max(1,nextH-myH);
-      // remaining 앞에서부터 needed개까지, who가 가능한 슬롯만 연속 취득
-      const mySlots=[];
-      for(let i=0;i<remaining.length&&mySlots.length<needed;i++){
-        if(!busyAt[who].has(remaining[i]))mySlots.push(remaining[i]);
-        else break;
-      }
-      if(!mySlots.length){remaining.shift();continue;}
-      // 연속 구간별로 묶어 표시
-      groupConsecutive(mySlots).forEach(grp=>{
-        result.push({slots:grp,slotLabel:blockLabel(grp),absentee:ab.name,leaveType:ab.leaveType,assignee:who,hours:grp.length});
-      });
-      mySlots.forEach(s=>busyAt[who].add(s));
-      sess[who]+=mySlots.length;
-      const used=new Set(mySlots);
-      remaining=remaining.filter(s=>!used.has(s));
+  // 슬롯 시간 순서대로 물채우기: 가장 누적시간 낮은 사람부터 배정
+  const triples=[]; // {slot, ab, who}
+  for(const slot of ALL_SLOTS){
+    const needs=slotNeeds[slot];
+    if(!needs) continue;
+    const sorted=[...avail].sort((a,b)=>{
+      const ha=h[a]||0,hb=h[b]||0;
+      return ha!==hb?ha-hb:MEMBERS.indexOf(a)-MEMBERS.indexOf(b);
+    });
+    for(let i=0;i<needs.length&&i<sorted.length;i++){
+      const who=sorted[i];
+      triples.push({slot,ab:needs[i],who});
+      h[who]=(h[who]||0)+1;
     }
+  }
+
+  // 휴가자+대행자 조합별로 연속 슬롯 묶기
+  const grpMap={};
+  for(const {slot,ab,who} of triples){
+    const key=`${ab.name}::${who}`;
+    if(!grpMap[key]) grpMap[key]={ab,who,slots:[]};
+    grpMap[key].slots.push(slot);
+  }
+
+  const result=[];
+  for(const {ab,who,slots} of Object.values(grpMap)){
+    groupConsecutive(slots).forEach(grp=>{
+      result.push({slots:grp,slotLabel:blockLabel(grp),absentee:ab.name,leaveType:ab.leaveType,assignee:who,hours:grp.length});
+    });
   }
 
   result.sort((a,b)=>{
@@ -570,6 +569,8 @@ function calcCoverage(absences,cumHours){
     if(sa!==sb)return sa-sb;
     return absences.findIndex(x=>x.name===a.absentee)-absences.findIndex(x=>x.name===b.absentee);
   });
+
+  const sess=Object.fromEntries(MEMBERS.map(m=>[m,absentSet.has(m)?0:(h[m]||0)-(cumHours[m]||0)]));
   return{result,sess};
 }
 
