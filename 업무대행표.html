@@ -403,6 +403,27 @@ tr.grp-sep td{border-top:2px solid #e0e9f7}
   </div>
 </div>
 
+<div id="appendModal" class="modal-overlay">
+  <div class="modal-dialog" style="width:420px">
+    <div class="modal-head"><h3>📅 대행표가 이미 존재합니다</h3></div>
+    <div class="modal-body">
+      <div id="appendModalDate" class="modal-date-label"></div>
+      <div style="font-size:13px;color:#374151;line-height:1.8;margin-bottom:6px">
+        <strong>추가</strong> — 신규 휴가자만 배정 추가 <span style="color:#64748b;font-size:11px">(기존 대행표·누적 유지)</span><br>
+        <strong>교체</strong> — 전체 재배정 <span style="color:#64748b;font-size:11px">(기존 대행표 삭제 후 재생성)</span>
+      </div>
+      <div id="appendNewList" style="margin-top:10px;font-size:12px;font-weight:600;line-height:1.6"></div>
+    </div>
+    <div class="modal-foot" style="justify-content:space-between">
+      <button class="btn btn-secondary" onclick="closeAppendModal()">취소</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" onclick="doReplace()">교체</button>
+        <button id="appendBtn" class="btn btn-primary" onclick="doAppend()">추가</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -913,11 +934,66 @@ function generate(){
 
   const ei=data.history.findIndex(h=>h.date===date);
   if(ei!==-1){
-    if(!confirm(`${fmtDate(date)}의 대행표가 이미 존재합니다. 교체하시겠습니까?`))return;
-    const os=sessFromAssignments(data.history[ei].assignments);
-    for(const m of MEMBERS)data.hours[m]=(data.hours[m]||0)-(os[m]||0);
-    data.history.splice(ei,1);
+    // 기존 이력 있음 → 추가/교체/취소 모달
+    _pendingGen={date,absences,data,ei};
+    const existingNames=new Set(data.history[ei].absences.map(a=>a.name));
+    const newOnes=absences.filter(a=>!existingNames.has(a.name));
+    document.getElementById('appendModalDate').innerHTML=`📅 <strong>${fmtDate(date)}</strong>`;
+    document.getElementById('appendNewList').innerHTML=newOnes.length
+      ?`<span style="color:#2563eb">➕ 신규 추가: <strong>${newOnes.map(a=>`${a.name}(${a.leaveType})`).join(', ')}</strong></span>`
+      :`<span style="color:#dc2626">⚠️ 폼의 휴가자가 기존과 동일합니다. 교체만 가능합니다.</span>`;
+    document.getElementById('appendBtn').disabled=!newOnes.length;
+    document.getElementById('appendModal').classList.add('open');
+    return;
   }
+  _doCreate(date,absences,data);
+}
+
+let _pendingGen=null;
+
+function closeAppendModal(){
+  document.getElementById('appendModal').classList.remove('open');
+  _pendingGen=null;
+}
+
+function doAppend(){
+  if(!_pendingGen)return;
+  const{date,absences,data,ei}=_pendingGen;
+  closeAppendModal();
+  const existing=data.history[ei];
+  const existingNames=new Set(existing.absences.map(a=>a.name));
+  const newAbsences=absences.filter(a=>!existingNames.has(a.name));
+  if(!newAbsences.length){showToast('추가할 새로운 휴가자가 없습니다.');return;}
+  // data.hours에 기존 배정분이 이미 포함되어 있으므로 신규분만 계산
+  const{result,sess}=calcCoverage(newAbsences,data.hours);
+  for(const m of MEMBERS)data.hours[m]=(data.hours[m]||0)+(sess[m]||0);
+  const mergedAbsences=[...existing.absences,...newAbsences];
+  const mergedAssignments=[...existing.assignments,...result].sort((a,b)=>{
+    const sa=a.slots?a.slots[0]:(a.slot??0),sb=b.slots?b.slots[0]:(b.slot??0);
+    return sa-sb;
+  });
+  data.history[ei]={...existing,absences:mergedAbsences,assignments:mergedAssignments};
+  save(data);
+  _lastCov={date,absences:mergedAbsences,assignments:mergedAssignments,histId:existing.id};
+  document.getElementById('covContent').innerHTML=renderCoverage(date,mergedAbsences,mergedAssignments);
+  rerenderCum(data,sess);
+  document.getElementById('histContent').innerHTML=renderHistory(data.history);
+  renderTeamChips(sess);
+  showTab('cov');
+  showToast(`${newAbsences.map(a=>a.name).join(', ')} 추가 배정 완료`);
+}
+
+function doReplace(){
+  if(!_pendingGen)return;
+  const{date,absences,data,ei}=_pendingGen;
+  closeAppendModal();
+  const os=sessFromAssignments(data.history[ei].assignments);
+  for(const m of MEMBERS)data.hours[m]=(data.hours[m]||0)-(os[m]||0);
+  data.history.splice(ei,1);
+  _doCreate(date,absences,data);
+}
+
+function _doCreate(date,absences,data){
   const{result,sess}=calcCoverage(absences,data.hours);
   for(const m of MEMBERS)data.hours[m]=(data.hours[m]||0)+(sess[m]||0);
   const newId=`${date}-${Date.now()}`;
