@@ -372,7 +372,16 @@ tr.grp-sep td{border-top:2px solid #e0e9f7}
           <option value="오후반반차">오후반반차 (16~18시)</option>
           <option value="건강검진">건강검진 (9~14시)</option>
           <option value="회식">🍻 회식 (팀 이벤트)</option>
+          <option value="외근">🚗 외근 (시간 직접 입력)</option>
         </select>
+      </div>
+      <div class="form-group" id="vacTimeGroup" style="display:none">
+        <label>외근 시간</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="time" id="vacTimeStart" style="flex:1">
+          <span style="color:#64748b;font-size:13px;font-weight:700">~</span>
+          <input type="time" id="vacTimeEnd" style="flex:1">
+        </div>
       </div>
     </div>
     <div class="modal-foot">
@@ -1488,10 +1497,10 @@ function delFDEntry(id){
 }
 
 // ── Vacation Calendar ─────────────────────────────────
-const VT_BG={'연차휴가':'#fff0f0','오전연차':'#eff6ff','오후연차':'#fff7ed','오전반반차':'#f0fdf4','오후반반차':'#f5f3ff','건강검진':'#f0fdfa','회식':'#fef08a'};
-const VT_TC={'연차휴가':'#b91c1c','오전연차':'#1d4ed8','오후연차':'#c2410c','오전반반차':'#065f46','오후반반차':'#6d28d9','건강검진':'#0f766e','회식':'#78350f'};
-const VT_BD={'연차휴가':'#ef4444','오전연차':'#3b82f6','오후연차':'#f97316','오전반반차':'#10b981','오후반반차':'#8b5cf6','건강검진':'#14b8a6','회식':'#f59e0b'};
-const VT_SHORT={'연차휴가':'연차','오전연차':'오전연차','오후연차':'오후연차','오전반반차':'오전반반','오후반반차':'오후반반','건강검진':'건강검진','회식':'🍻회식'};
+const VT_BG={'연차휴가':'#fff0f0','오전연차':'#eff6ff','오후연차':'#fff7ed','오전반반차':'#f0fdf4','오후반반차':'#f5f3ff','건강검진':'#f0fdfa','회식':'#fef08a','외근':'#f0f9ff'};
+const VT_TC={'연차휴가':'#b91c1c','오전연차':'#1d4ed8','오후연차':'#c2410c','오전반반차':'#065f46','오후반반차':'#6d28d9','건강검진':'#0f766e','회식':'#78350f','외근':'#0369a1'};
+const VT_BD={'연차휴가':'#ef4444','오전연차':'#3b82f6','오후연차':'#f97316','오전반반차':'#10b981','오후반반차':'#8b5cf6','건강검진':'#14b8a6','회식':'#f59e0b','외근':'#0ea5e9'};
+const VT_SHORT={'연차휴가':'연차','오전연차':'오전연차','오후연차':'오후연차','오전반반차':'오전반반','오후반반차':'오후반반','건강검진':'건강검진','회식':'🍻회식','외근':'🚗외근'};
 let _vcY,_vcM;
 
 function initVacCal(){
@@ -1526,14 +1535,14 @@ function renderVacCal(){
     if(isFull)cls+=' vcd-full';
     const dnCls='vcal-dn '+(isToday?'vdn-today':dw===0?'vdn-sun':dw===6?'vdn-sat':'vdn-wd');
     const holidayTag=holiday?`<div class="vcal-holiday">🎌 ${holiday}</div>`:'';
-    const erHtml=de.map(e=>`<div class="vcal-er${e.leaveType==='회식'?' vcal-er-hoesik':''}" style="background:${VT_BG[e.leaveType]||'#f8fafc'};border-left-color:${VT_BD[e.leaveType]||'#94a3b8'}">
+    const erHtml=de.map(e=>{const typeLabel=e.leaveType==='외근'&&e.timeRange?`🚗 ${e.timeRange.replace(' ~ ','-')}`:VT_SHORT[e.leaveType]||e.leaveType;return`<div class="vcal-er${e.leaveType==='회식'?' vcal-er-hoesik':''}" style="background:${VT_BG[e.leaveType]||'#f8fafc'};border-left-color:${VT_BD[e.leaveType]||'#94a3b8'}">
       <span class="vcal-ename" style="color:${VT_TC[e.leaveType]||'#374151'}">${e.name}</span>
-      <span class="vcal-etype" style="color:${VT_TC[e.leaveType]||'#5a6a7e'}">${VT_SHORT[e.leaveType]||e.leaveType}</span>
+      <span class="vcal-etype" style="color:${VT_TC[e.leaveType]||'#5a6a7e'}">${typeLabel}</span>
       <div class="vcal-ebtns">
         <button class="vcal-btn" onclick="openVacEdit('${e.id}')" title="수정">✏</button>
         <button class="vcal-btn" onclick="delVacEntry('${e.id}')" title="삭제" style="color:#dc2626">✕</button>
       </div>
-    </div>`).join('');
+    </div>`}).join('');
     const footer=isFull
       ?`<div class="vcal-fulltag">⚠ 7명 마감</div>`
       :`<button class="vcal-addbtn" onclick="openVacAdd('${ds}')">＋ 추가</button>`;
@@ -1569,6 +1578,8 @@ function openVacAdd(date){
   document.getElementById('vacDateHidden').value=date;
   document.getElementById('vacName').value='';
   document.getElementById('vacType').value='';
+  document.getElementById('vacTimeStart').value='';
+  document.getElementById('vacTimeEnd').value='';
   onVacTypeChange('');
   document.getElementById('vacModal').classList.add('open');
 }
@@ -1582,6 +1593,14 @@ function openVacEdit(id){
   document.getElementById('vacName').value=e.name==='팀전체'?'':e.name;
   document.getElementById('vacType').value=e.leaveType;
   onVacTypeChange(e.leaveType);
+  if(e.leaveType==='외근'&&e.timeRange){
+    const parts=(e.timeRange||'').split(' ~ ');
+    document.getElementById('vacTimeStart').value=parts[0]||'';
+    document.getElementById('vacTimeEnd').value=parts[1]||'';
+  }else{
+    document.getElementById('vacTimeStart').value='';
+    document.getElementById('vacTimeEnd').value='';
+  }
   document.getElementById('vacModal').classList.add('open');
 }
 
@@ -1590,12 +1609,14 @@ function closeVacModal(){document.getElementById('vacModal').classList.remove('o
 function onVacTypeChange(type){
   const grp=document.getElementById('vacNameGroup');
   const sel=document.getElementById('vacName');
+  const timeGrp=document.getElementById('vacTimeGroup');
   if(type==='회식'){
     grp.style.opacity='.4';grp.style.pointerEvents='none';
     sel.value='';
   }else{
     grp.style.opacity='1';grp.style.pointerEvents='';
   }
+  if(timeGrp)timeGrp.style.display=(type==='외근')?'block':'none';
 }
 
 function saveVacEntry(){
@@ -1604,18 +1625,25 @@ function saveVacEntry(){
   const name=leaveType==='회식'?(rawName||'팀전체'):rawName;
   const date=document.getElementById('vacDateHidden').value;
   const editId=document.getElementById('vacEditId').value;
+  let timeRange='';
+  if(leaveType==='외근'){
+    const ts=document.getElementById('vacTimeStart').value;
+    const te=document.getElementById('vacTimeEnd').value;
+    if(!ts||!te){showToast('외근 시작/종료 시간을 입력해주세요.');return;}
+    timeRange=`${ts} ~ ${te}`;
+  }
   if(!name&&leaveType!=='회식'){showToast('이름을 선택해주세요.');return;}
   if(!leaveType){showToast('휴가 종류를 선택해주세요.');return;}
   const entries=loadVac();
   if(editId){
     const idx=entries.findIndex(e=>e.id===editId);
-    if(idx!==-1)entries[idx]={...entries[idx],name,leaveType};
+    if(idx!==-1)entries[idx]={...entries[idx],name,leaveType,...(timeRange?{timeRange}:{})};
     saveVac(entries);showToast('수정되었습니다.');
   }else{
     if(entries.filter(e=>e.date===date).length>=7){showToast('해당 날짜는 이미 7명이 등록되어 있습니다.');closeVacModal();return;}
     if(entries.filter(e=>e.date===date&&e.name===name).length>=2){showToast(`${name}님은 이미 해당 날짜에 2건 등록되어 있습니다.`);return;}
-    entries.push({id:`vac-${date}-${Date.now()}`,date,name,leaveType});
-    saveVac(entries);showToast('휴가가 등록되었습니다.');
+    entries.push({id:`vac-${date}-${Date.now()}`,date,name,leaveType,...(timeRange?{timeRange}:{})});
+    saveVac(entries);showToast('외근이 등록되었습니다.');
   }
   closeVacModal();renderVacCal();
 }
