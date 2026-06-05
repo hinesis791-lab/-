@@ -160,6 +160,10 @@ tr.grp-sep td{border-top:2px solid #e0e9f7}
 .team-chips{display:flex;flex-wrap:wrap;gap:6px}
 .t-chip{background:#f1f5fb;border:1.5px solid #dde6f5;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;color:#5a6a7e;transition:all .15s}
 .t-chip.active{background:linear-gradient(135deg,#dbeafe,#eff6ff);border-color:#60a5fa;color:#1d4ed8;box-shadow:0 2px 8px rgba(37,99,235,.15)}
+/* ── 휴가현황 팀원 통계 칩 ── */
+.vsc{background:#f1f5fb;border:1.5px solid #dde6f5;border-radius:9px;padding:5px 12px;font-size:12px;font-weight:700;color:#5a6a7e;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
+.vsc.has-vac{background:#eff6ff;border-color:#93c5fd;color:#2563eb}
+.vsc.open{background:linear-gradient(135deg,#dbeafe,#eff6ff)!important;border-color:#3b82f6!important;color:#1d4ed8!important;box-shadow:0 2px 8px rgba(37,99,235,.15)}
 
 /* ── 모달 ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(5,14,31,.65);backdrop-filter:blur(6px);z-index:9000;display:none;align-items:center;justify-content:center;padding:20px}
@@ -1614,6 +1618,52 @@ function delFDEntry(id){
 }
 
 // ── Vacation Calendar ─────────────────────────────────
+let _vacStatOpen=null;
+const VAC_STAT_ORDER=['연차휴가','오전연차','오후연차','오전반반차','오후반반차','건강검진','외근'];
+
+function buildVacStats(){
+  const entries=loadVac();
+  const stats={};
+  for(const m of MEMBERS)stats[m]={};
+  for(const e of entries){
+    if(!e.name||e.leaveType==='회식'||!MEMBERS.includes(e.name))continue;
+    stats[e.name][e.leaveType]=(stats[e.name][e.leaveType]||0)+1;
+  }
+  return stats;
+}
+
+function _showVacStatDetail(name){
+  const detail=document.getElementById('vacStatDetail');
+  if(!detail)return;
+  const stats=buildVacStats();
+  const ms=stats[name]||{};
+  const rows=VAC_STAT_ORDER.filter(t=>ms[t]>0).map(t=>
+    `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f0f4fb"><span style="font-size:12px;color:#374151;font-weight:600">${t}</span><span style="font-size:13px;font-weight:800;color:#1d4ed8">${ms[t]}회</span></div>`
+  ).join('');
+  const total=Object.values(ms).reduce((s,v)=>s+v,0);
+  detail.innerHTML=`<div style="background:white;border:1.5px solid #bfdbfe;border-radius:14px;padding:16px;display:inline-block;min-width:200px;box-shadow:0 4px 16px rgba(20,40,80,.1);margin-top:4px">
+    <div style="font-weight:800;font-size:14px;color:#0c2354;margin-bottom:10px;padding-bottom:8px;border-bottom:1.5px solid #e8eef8;display:flex;justify-content:space-between;align-items:center">
+      <span>${name}</span><span style="font-size:11px;background:#dbeafe;color:#1d4ed8;border-radius:20px;padding:2px 9px;font-weight:700">총 ${total}회</span>
+    </div>
+    ${rows||'<div style="text-align:center;color:#94a3b8;padding:8px;font-size:12px">휴가 이력이 없습니다</div>'}
+  </div>`;
+  detail.style.display='block';
+}
+
+function toggleVacStat(name){
+  document.querySelectorAll('.vsc').forEach(c=>c.classList.remove('open'));
+  const detail=document.getElementById('vacStatDetail');
+  if(_vacStatOpen===name){
+    _vacStatOpen=null;
+    if(detail)detail.style.display='none';
+    return;
+  }
+  _vacStatOpen=name;
+  const ac=document.querySelector(`.vsc[data-n="${name}"]`);
+  if(ac)ac.classList.add('open');
+  _showVacStatDetail(name);
+}
+
 const VT_BG={'연차휴가':'#fff0f0','오전연차':'#eff6ff','오후연차':'#fff7ed','오전반반차':'#f0fdf4','오후반반차':'#f5f3ff','건강검진':'#f0fdfa','회식':'#fef08a','외근':'#f0f9ff'};
 const VT_TC={'연차휴가':'#b91c1c','오전연차':'#1d4ed8','오후연차':'#c2410c','오전반반차':'#065f46','오후반반차':'#6d28d9','건강검진':'#0f766e','회식':'#78350f','외근':'#0369a1'};
 const VT_BD={'연차휴가':'#ef4444','오전연차':'#3b82f6','오후연차':'#f97316','오전반반차':'#10b981','오후반반차':'#8b5cf6','건강검진':'#14b8a6','회식':'#f59e0b','외근':'#0ea5e9'};
@@ -1669,6 +1719,12 @@ function renderVacCal(){
   const trail=totalCells%7===0?0:7-totalCells%7;
   for(let i=0;i<trail;i++)g+=`<div class="vcal-cell vcd-blank"></div>`;
   const legend=Object.entries(VT_BD).map(([k,c])=>`<span style="display:inline-flex;align-items:center;gap:4px;margin-right:10px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${c}"></span><span style="font-size:10px;color:#5a6a7e;font-weight:600">${VT_SHORT[k]||k}</span></span>`).join('');
+  const vacStats=buildVacStats();
+  const memberChipsHtml=MEMBERS.map(m=>{
+    const total=Object.values(vacStats[m]||{}).reduce((s,v)=>s+v,0);
+    const cls=`vsc${total>0?' has-vac':''}`;
+    return`<button class="${cls}" data-n="${m}" onclick="toggleVacStat('${m}')">${m}${total>0?` <span style="font-size:10px;opacity:.8">${total}</span>`:''}</button>`;
+  }).join('');
   document.getElementById('vacContent').innerHTML=`
     <div class="vcal-nav">
       <button class="btn btn-secondary" onclick="moveVacCal(-1)" style="padding:7px 18px;font-weight:700">◀</button>
@@ -1677,7 +1733,17 @@ function renderVacCal(){
     </div>
     <div class="vcal-wrap"><div class="vcal-grid">${g}</div></div>
     <div style="margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:4px">${legend}</div>
-    <div style="margin-top:6px;font-size:11px;color:#94a3b8">날짜 셀의 <strong>＋ 추가</strong> 클릭 · 하루 최대 7명 · 누적 시간 미포함</div>`;
+    <div style="margin-top:6px;font-size:11px;color:#94a3b8">날짜 셀의 <strong>＋ 추가</strong> 클릭 · 하루 최대 7명 · 누적 시간 미포함</div>
+    <div style="margin-top:16px;border-top:1.5px solid #e8eef8;padding-top:14px">
+      <div style="font-size:11px;font-weight:800;color:#64748b;margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px">팀원별 휴가 현황 (누적)</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${memberChipsHtml}</div>
+      <div id="vacStatDetail" style="display:none;margin-top:8px"></div>
+    </div>`;
+  if(_vacStatOpen){
+    const ac=document.querySelector(`.vsc[data-n="${_vacStatOpen}"]`);
+    if(ac)ac.classList.add('open');
+    _showVacStatDetail(_vacStatOpen);
+  }
 }
 
 function moveVacCal(d){
