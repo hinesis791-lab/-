@@ -850,21 +850,41 @@ function rerenderCum(data,sess){
 }
 
 function renderHistory(history){
-  if(!history.length)return`<div class="empty"><svg width="48" height="48" viewBox="0 0 48 48" fill="none" style="opacity:.3;margin-bottom:10px"><circle cx="24" cy="24" r="19" stroke="#94a3b8" stroke-width="2.5"/><line x1="24" y1="14" x2="24" y2="24" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"/><circle cx="24" cy="31" r="2" fill="#94a3b8"/></svg><p>이력이 없습니다</p><small>업무대행표를 생성하면 이력이 쌓입니다</small></div>`;
-  const sorted=[...history].sort((a,b)=>b.date.localeCompare(a.date));
+  const fdAll=loadFD().map(e=>({...e,_fd:true}));
+  const allItems=[...history,...fdAll];
+  if(!allItems.length)return`<div class="empty"><svg width="48" height="48" viewBox="0 0 48 48" fill="none" style="opacity:.3;margin-bottom:10px"><circle cx="24" cy="24" r="19" stroke="#94a3b8" stroke-width="2.5"/><line x1="24" y1="14" x2="24" y2="24" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"/><circle cx="24" cy="31" r="2" fill="#94a3b8"/></svg><p>이력이 없습니다</p><small>업무대행표를 생성하면 이력이 쌓입니다</small></div>`;
+  const sorted=[...allItems].sort((a,b)=>b.date.localeCompare(a.date));
   const groups={};
   for(const e of sorted){const ym=e.date.slice(0,7);if(!groups[ym])groups[ym]=[];groups[ym].push(e);}
   const curYM=`${_cy}-${String(_cm+1).padStart(2,'0')}`;
+  const todayStr=new Date().toISOString().slice(0,10);
   return Object.keys(groups).sort().reverse().map(ym=>{
     const entries=groups[ym];
     const[y,mo]=ym.split('-');
-    const folderH=entries.reduce((s,e)=>s+e.assignments.reduce((ss,a)=>ss+(a.hours??a.slots?.length??1),0),0);
+    const folderH=entries.filter(e=>!e._fd).reduce((s,e)=>s+e.assignments.reduce((ss,a)=>ss+(a.hours??a.slots?.length??1),0),0);
+    const fdCount=entries.filter(e=>e._fd).length;
     const isOpen=ym===curYM;
-    const todayStr=new Date().toISOString().slice(0,10);
     const entriesHtml=entries.map(e=>{
+      const isToday=e.date===todayStr;
+      if(e._fd){
+        const fdRows=e.rows.map(r=>`<tr><td><strong>${r.absentee}</strong></td><td><strong style="color:#1e3a5f">${r.coverage||'미배정'}</strong></td></tr>`).join('');
+        return`<div class="hist-entry${isToday?' open':''}" id="he-${e.id}" style="border-color:#fde68a">
+          <div class="hist-hdr" onclick="toggleHist('${e.id}')">
+            <div><div class="hist-date">${fmtDate(e.date)}</div><div class="hist-meta" style="color:#92400e">🏖 Family Day · ${e.rows.length}명 배정</div></div>
+            <div class="hist-acts">
+              <button class="btn btn-edit" onclick="event.stopPropagation();editFDEntryFromHist('${e.id}')">✏️ 수정</button>
+              <button class="btn btn-del" onclick="event.stopPropagation();delFDEntry('${e.id}')">🗑 삭제</button>
+              <button class="btn btn-clip" onclick="event.stopPropagation();copyFDEntry('${e.id}')">📋 복사</button>
+              <span class="hist-chev">▼</span>
+            </div>
+          </div>
+          <div class="hist-body${isToday?' open':''}" id="hb-${e.id}">
+            <div class="tw"><table><thead><tr><th>Family Day</th><th>업무대행자</th></tr></thead><tbody>${fdRows}</tbody></table></div>
+          </div>
+        </div>`;
+      }
       const meta=e.absences.map(a=>`${a.name}(${a.leaveType==='외근'&&a.timeRange?'외근('+a.timeRange+')':a.leaveType})`).join(', ');
       const eH=e.assignments.reduce((s,a)=>s+(a.hours??a.slots?.length??1),0);
-      const isToday=e.date===todayStr;
       return`<div class="hist-entry${isToday?' open':''}" id="he-${e.id}">
         <div class="hist-hdr" onclick="toggleHist('${e.id}')">
           <div><div class="hist-date">${fmtDate(e.date)}</div><div class="hist-meta">${meta} · 총 ${eH}시간</div></div>
@@ -873,7 +893,6 @@ function renderHistory(history){
             <button class="btn btn-del" onclick="event.stopPropagation();delHist('${e.id}')">🗑 삭제</button>
             <button class="btn btn-clip" onclick="event.stopPropagation();copyHistEntry('${e.id}')">📋 복사</button>
             <a href="http://isup.jobkorea.co.kr/isjk/agentConfig.do" target="_blank" onclick="event.stopPropagation()" style="padding:4px 10px;font-size:11px;border-radius:7px;text-decoration:none;background:#eff6ff;border:1.5px solid #bfdbfe;color:#2563eb;display:inline-flex;align-items:center">📞 착신</a>
-
             <span class="hist-chev">▼</span>
           </div>
         </div>
@@ -882,13 +901,15 @@ function renderHistory(history){
         </div>
       </div>`;
     }).join('');
+    const hBadge=folderH>0?`<span style="font-size:11px;background:rgba(100,210,140,.25);color:#a7f3d0;border-radius:20px;padding:2px 9px;font-weight:700">총 ${folderH}h</span>`:'';
+    const fdBadge=fdCount>0?`<span style="font-size:11px;background:rgba(251,191,36,.3);color:#fef3c7;border-radius:20px;padding:2px 9px;font-weight:700">🏖 FD ${fdCount}건</span>`:'';
     return`<div class="hist-month-folder" id="hf-${ym}">
       <div class="hist-month-hdr" onclick="toggleHistMonth('${ym}')">
         <div style="display:flex;align-items:center;gap:8px">
           <span id="hfi-${ym}" style="font-size:16px">${isOpen?'📂':'📁'}</span>
           <span style="font-weight:800;font-size:14px">${y}년 ${parseInt(mo)}월</span>
           <span style="font-size:11px;background:rgba(255,255,255,.2);border-radius:20px;padding:2px 9px;font-weight:700">${entries.length}건</span>
-          <span style="font-size:11px;background:rgba(100,210,140,.25);color:#a7f3d0;border-radius:20px;padding:2px 9px;font-weight:700">총 ${folderH}h</span>
+          ${hBadge}${fdBadge}
         </div>
         <span id="hfc-${ym}" style="font-size:13px;opacity:.7">${isOpen?'▲':'▼'}</span>
       </div>
@@ -1542,6 +1563,7 @@ function saveFDEntry(){
     showToast('Family Day 배정이 저장되었습니다.');
   }
   renderFamilyDay();refreshCovDisplay();
+  document.getElementById('histContent').innerHTML=renderHistory(load().history);
 }
 
 function editFDEntry(id){
@@ -1568,6 +1590,11 @@ function editFDEntry(id){
 
 function cancelFDEdit(){renderFamilyDay();}
 
+function editFDEntryFromHist(id){
+  showTab('fd');
+  editFDEntry(id);
+}
+
 function copyFDEntry(id){
   const entry=loadFD().find(e=>e.id===id);
   if(!entry)return;
@@ -1583,6 +1610,7 @@ function delFDEntry(id){
   if(!confirm('이 Family Day 이력을 삭제하시겠습니까?'))return;
   saveFD(loadFD().filter(e=>e.id!==id));
   renderFamilyDay();refreshCovDisplay();
+  document.getElementById('histContent').innerHTML=renderHistory(load().history);
 }
 
 // ── Vacation Calendar ─────────────────────────────────
@@ -1845,7 +1873,7 @@ function showToast(msg){
         _fbCache=v;localStorage.setItem(SK,JSON.stringify(v));
         if(changed)_rerenderActive(v);
       });
-      _fdRef.on('value',snap=>{const v=snap.val();if(v){localStorage.setItem(FK,JSON.stringify(v));renderFamilyDay();refreshCovDisplay();}});
+      _fdRef.on('value',snap=>{const v=snap.val();if(v){localStorage.setItem(FK,JSON.stringify(v));renderFamilyDay();refreshCovDisplay();document.getElementById('histContent').innerHTML=renderHistory(load().history);}});
       _vacRef.on('value',snap=>{const v=snap.val();if(v){localStorage.setItem(VK,JSON.stringify(v));}});
 
       _fbStatus('🟢 실시간 연결됨',true);
