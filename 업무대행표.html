@@ -1621,7 +1621,7 @@ function delFDEntry(id){
 // ── Vacation Calendar ─────────────────────────────────
 let _vacStatOpen=null;
 const VAC_STAT_ORDER=['연차휴가','오전연차','오전연차+FD','오후연차','오전반반차','오후반반차','건강검진','외근'];
-const VAC_SCORES={'연차휴가':1,'오전연차':0.5,'오전연차+FD':0.5,'오후연차':0.5,'오전반반차':0.2,'오후반반차':0.2,'건강검진':0.5,'외근':0.5};
+const VAC_SCORES={'연차휴가':1,'오전연차':0.5,'오전연차+FD':0.5,'오후연차':0.5,'오전반반차':0.25,'오후반반차':0.25,'건강검진':0.5,'외근':0.5};
 function _fmtScore(n){const r=Math.round(n*10)/10;return r%1===0?String(r):r.toFixed(1);}
 
 function buildVacStats(){
