@@ -1727,9 +1727,11 @@ function renderVacCal(){
   const vacStats=buildVacStats();
   const memberChipsHtml=MEMBERS.map(m=>{
     const ms=vacStats[m]||{};
+    const total=Object.values(ms).reduce((s,v)=>s+v,0);
     const score=VAC_STAT_ORDER.reduce((s,t)=>s+(ms[t]||0)*(VAC_SCORES[t]||0),0);
     const cls=`vsc${score>0?' has-vac':''}`;
-    return`<button class="${cls}" data-n="${m}" onclick="toggleVacStat('${m}')">${m}${score>0?` <span style="font-size:10px;opacity:.8">${_fmtScore(score)}</span>`:''}</button>`;
+    const badge=score>0?` <span style="font-size:10px;opacity:.75">${total}회</span> <span style="font-size:10px;font-weight:800;opacity:.9">${_fmtScore(score)}</span>`:'';
+    return`<button class="${cls}" data-n="${m}" onclick="toggleVacStat('${m}')">${m}${badge}</button>`;
   }).join('');
   document.getElementById('vacContent').innerHTML=`
     <div class="vcal-nav">
