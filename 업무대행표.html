@@ -1620,6 +1620,8 @@ function delFDEntry(id){
 // ── Vacation Calendar ─────────────────────────────────
 let _vacStatOpen=null;
 const VAC_STAT_ORDER=['연차휴가','오전연차','오후연차','오전반반차','오후반반차','건강검진','외근'];
+const VAC_SCORES={'연차휴가':1,'오전연차':0.5,'오후연차':0.5,'오전반반차':0.2,'오후반반차':0.2,'건강검진':0.5,'외근':0.5};
+function _fmtScore(n){const r=Math.round(n*10)/10;return r%1===0?String(r):r.toFixed(1);}
 
 function buildVacStats(){
   const entries=loadVac();
@@ -1637,13 +1639,14 @@ function _showVacStatDetail(name){
   if(!detail)return;
   const stats=buildVacStats();
   const ms=stats[name]||{};
-  const rows=VAC_STAT_ORDER.filter(t=>ms[t]>0).map(t=>
-    `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f0f4fb"><span style="font-size:12px;color:#374151;font-weight:600">${t}</span><span style="font-size:13px;font-weight:800;color:#1d4ed8">${ms[t]}회</span></div>`
-  ).join('');
-  const total=Object.values(ms).reduce((s,v)=>s+v,0);
+  const rows=VAC_STAT_ORDER.filter(t=>ms[t]>0).map(t=>{
+    const score=_fmtScore((ms[t]||0)*(VAC_SCORES[t]||0));
+    return`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f0f4fb"><span style="font-size:12px;color:#374151;font-weight:600">${t}</span><span style="font-size:13px;font-weight:800;color:#1d4ed8">${score}</span></div>`;
+  }).join('');
+  const total=_fmtScore(VAC_STAT_ORDER.reduce((s,t)=>s+(ms[t]||0)*(VAC_SCORES[t]||0),0));
   detail.innerHTML=`<div style="background:white;border:1.5px solid #bfdbfe;border-radius:14px;padding:16px;display:inline-block;min-width:200px;box-shadow:0 4px 16px rgba(20,40,80,.1);margin-top:4px">
     <div style="font-weight:800;font-size:14px;color:#0c2354;margin-bottom:10px;padding-bottom:8px;border-bottom:1.5px solid #e8eef8;display:flex;justify-content:space-between;align-items:center">
-      <span>${name}</span><span style="font-size:11px;background:#dbeafe;color:#1d4ed8;border-radius:20px;padding:2px 9px;font-weight:700">총 ${total}회</span>
+      <span>${name}</span><span style="font-size:11px;background:#dbeafe;color:#1d4ed8;border-radius:20px;padding:2px 9px;font-weight:700">총 ${total}점</span>
     </div>
     ${rows||'<div style="text-align:center;color:#94a3b8;padding:8px;font-size:12px">휴가 이력이 없습니다</div>'}
   </div>`;
@@ -1721,9 +1724,10 @@ function renderVacCal(){
   const legend=Object.entries(VT_BD).map(([k,c])=>`<span style="display:inline-flex;align-items:center;gap:4px;margin-right:10px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${c}"></span><span style="font-size:10px;color:#5a6a7e;font-weight:600">${VT_SHORT[k]||k}</span></span>`).join('');
   const vacStats=buildVacStats();
   const memberChipsHtml=MEMBERS.map(m=>{
-    const total=Object.values(vacStats[m]||{}).reduce((s,v)=>s+v,0);
-    const cls=`vsc${total>0?' has-vac':''}`;
-    return`<button class="${cls}" data-n="${m}" onclick="toggleVacStat('${m}')">${m}${total>0?` <span style="font-size:10px;opacity:.8">${total}</span>`:''}</button>`;
+    const ms=vacStats[m]||{};
+    const score=VAC_STAT_ORDER.reduce((s,t)=>s+(ms[t]||0)*(VAC_SCORES[t]||0),0);
+    const cls=`vsc${score>0?' has-vac':''}`;
+    return`<button class="${cls}" data-n="${m}" onclick="toggleVacStat('${m}')">${m}${score>0?` <span style="font-size:10px;opacity:.8">${_fmtScore(score)}</span>`:''}</button>`;
   }).join('');
   document.getElementById('vacContent').innerHTML=`
     <div class="vcal-nav">
