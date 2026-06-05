@@ -691,16 +691,29 @@ function buildRows(assignments){
   return rows;
 }
 
+function _buildFdSection(date){
+  const fdEntry=loadFD().find(e=>e.date===date);
+  if(!fdEntry||!fdEntry.rows.length)return'';
+  const rows=fdEntry.rows.map(r=>`<tr><td><strong>${r.absentee}</strong></td><td><strong style="color:#1e3a5f">${r.coverage||'미배정'}</strong></td></tr>`).join('');
+  return`<div style="margin-top:12px;background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1.5px solid #fde68a;border-radius:14px;padding:14px 16px"><div style="font-size:12px;font-weight:800;color:#92400e;margin-bottom:10px;display:flex;align-items:center;gap:6px">🏖 Family Day 배정</div><div class="tw"><table><thead><tr><th>Family Day</th><th>업무대행자</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+}
+
+function refreshCovDisplay(){
+  if(!_lastCov)return;
+  document.getElementById('covContent').innerHTML=renderCoverage(_lastCov.date,_lastCov.absences,_lastCov.assignments);
+}
+
 function renderCoverage(date,absences,assignments){
+  const fdSection=_buildFdSection(date);
   if(!assignments||!assignments.length)
-    return`<div class="banner"><div><div class="banner-date">${fmtDate(date)}</div><div class="banner-sub">업무대행 일정</div></div></div><p style="color:#94a3b8;text-align:center;padding:30px">배정할 업무가 없습니다.</p>`;
+    return`<div class="banner"><div><div class="banner-date">${fmtDate(date)}</div><div class="banner-sub">업무대행 일정</div></div></div><p style="color:#94a3b8;text-align:center;padding:30px">배정할 업무가 없습니다.</p>${fdSection}`;
   const summ={};
   for(const a of assignments){const h=a.hours??a.slots?.length??1;summ[a.assignee]=(summ[a.assignee]||0)+h;}
   const summChips=Object.entries(summ).map(([n,h])=>`<span class="s-chip">${n} <span style="color:#2e86c1">+${h}h</span></span>`).join('');
   const isChaksin=localStorage.getItem(`wca_chaksin_${date}`)==='1';
   return`<div class="banner"><div><div class="banner-date">${fmtDate(date)}</div><div class="banner-sub">업무대행 일정</div></div><div class="chips">${absences.map(a=>`<span class="chip">${a.name}·${a.leaveType==='외근'&&a.timeRange?'외근('+a.timeRange+')':a.leaveType}</span><button class="chip-copy" onclick="copyChipSlack('${a.name}')">📋 복사</button><button class="chip-copy" onclick="delCovAbsentee('${a.name}')">🗑 삭제</button>`).join('')}<button class="chip-copy" onclick="editCovEntry()">✏️ 수정</button><button class="btn-chaksin-chip${isChaksin?' checked':''}" onclick="toggleChaeksin(this,'${date}')">${isChaksin?'✅':'☐'} 착신완료</button></div></div>
   <div class="tw"><table><thead><tr><th style="width:160px">시간대 (연속 블록)</th><th>휴가자</th><th>휴가 종류</th><th>대행자</th></tr></thead><tbody>${buildRows(assignments)}</tbody></table></div>
-  <div class="summary-box"><h4>이번 배정 요약</h4><div class="summary-chips">${summChips}</div></div>`;
+  <div class="summary-box"><h4>이번 배정 요약</h4><div class="summary-chips">${summChips}</div></div>${fdSection}`;
 }
 
 function buildMonthlyData(history){
@@ -1501,7 +1514,7 @@ function saveFDEntry(){
     saveFD(entries);
     showToast('Family Day 배정이 저장되었습니다.');
   }
-  renderFamilyDay();
+  renderFamilyDay();refreshCovDisplay();
 }
 
 function editFDEntry(id){
@@ -1542,7 +1555,7 @@ function copyFDEntry(id){
 function delFDEntry(id){
   if(!confirm('이 Family Day 이력을 삭제하시겠습니까?'))return;
   saveFD(loadFD().filter(e=>e.id!==id));
-  renderFamilyDay();
+  renderFamilyDay();refreshCovDisplay();
 }
 
 // ── Vacation Calendar ─────────────────────────────────
@@ -1799,7 +1812,7 @@ function showToast(msg){
         _fbCache=v;localStorage.setItem(SK,JSON.stringify(v));
         if(changed)_rerenderActive(v);
       });
-      _fdRef.on('value',snap=>{const v=snap.val();if(v){localStorage.setItem(FK,JSON.stringify(v));renderFamilyDay();}});
+      _fdRef.on('value',snap=>{const v=snap.val();if(v){localStorage.setItem(FK,JSON.stringify(v));renderFamilyDay();refreshCovDisplay();}});
       _vacRef.on('value',snap=>{const v=snap.val();if(v){localStorage.setItem(VK,JSON.stringify(v));}});
 
       _fbStatus('🟢 실시간 연결됨',true);
