@@ -533,6 +533,9 @@ function showTodayCov(data){
   if(entry){
     _lastCov={date:entry.date,absences:entry.absences,assignments:entry.assignments,histId:entry.id};
     document.getElementById('covContent').innerHTML=renderCoverage(entry.date,entry.absences,entry.assignments);
+  }else if(_buildFdSection(todayStr)){
+    _lastCov={date:todayStr,absences:[],assignments:[]};
+    document.getElementById('covContent').innerHTML=renderCoverage(todayStr,[],[]);
   }
 }
 
@@ -706,7 +709,7 @@ function refreshCovDisplay(){
 function renderCoverage(date,absences,assignments){
   const fdSection=_buildFdSection(date);
   if(!assignments||!assignments.length)
-    return`<div class="banner"><div><div class="banner-date">${fmtDate(date)}</div><div class="banner-sub">업무대행 일정</div></div></div><p style="color:#94a3b8;text-align:center;padding:30px">배정할 업무가 없습니다.</p>${fdSection}`;
+    return`<div class="banner"><div><div class="banner-date">${fmtDate(date)}</div><div class="banner-sub">업무대행 일정</div></div></div>${fdSection||'<p style="color:#94a3b8;text-align:center;padding:30px">배정할 업무가 없습니다.</p>'}`;
   const summ={};
   for(const a of assignments){const h=a.hours??a.slots?.length??1;summ[a.assignee]=(summ[a.assignee]||0)+h;}
   const summChips=Object.entries(summ).map(([n,h])=>`<span class="s-chip">${n} <span style="color:#2e86c1">+${h}h</span></span>`).join('');
@@ -1770,8 +1773,14 @@ function selCalDate(ds){
     _lastCov={date:entry.date,absences:entry.absences,assignments:entry.assignments,histId:entry.id};
     document.getElementById('covContent').innerHTML=renderCoverage(entry.date,entry.absences,entry.assignments);
   }else{
-    _lastCov=null;
-    document.getElementById('covContent').innerHTML=`<div class="empty"><svg width="56" height="56" viewBox="0 0 56 56" fill="none" style="opacity:.3;margin-bottom:10px"><rect x="9" y="7" width="38" height="42" rx="4" stroke="#94a3b8" stroke-width="2.5"/><line x1="17" y1="19" x2="39" y2="19" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/><line x1="17" y1="27" x2="39" y2="27" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/><line x1="17" y1="35" x2="30" y2="35" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/></svg><p>대행표가 없습니다</p><small>날짜와 휴가자를 선택 후 생성하세요</small></div>`;
+    const fdOnly=_buildFdSection(ds);
+    if(fdOnly){
+      _lastCov={date:ds,absences:[],assignments:[]};
+      document.getElementById('covContent').innerHTML=renderCoverage(ds,[],[]);
+    }else{
+      _lastCov=null;
+      document.getElementById('covContent').innerHTML=`<div class="empty"><svg width="56" height="56" viewBox="0 0 56 56" fill="none" style="opacity:.3;margin-bottom:10px"><rect x="9" y="7" width="38" height="42" rx="4" stroke="#94a3b8" stroke-width="2.5"/><line x1="17" y1="19" x2="39" y2="19" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/><line x1="17" y1="27" x2="39" y2="27" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/><line x1="17" y1="35" x2="30" y2="35" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/></svg><p>대행표가 없습니다</p><small>날짜와 휴가자를 선택 후 생성하세요</small></div>`;
+    }
   }
 }
 
