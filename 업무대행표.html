@@ -1225,9 +1225,11 @@ function copyHistEntry(id){
     const sa=startSlotOf(a),sb=startSlotOf(b);
     return sa!==sb?sa-sb:entry.absences.findIndex(x=>x.name===a.absentee)-entry.absences.findIndex(x=>x.name===b.absentee);
   });
+  const isChaksin=localStorage.getItem(`wca_chaksin_${entry.date}`)==='1';
   let text=`📋 JK기업영업2팀 업무(자동누적)대행표 - ${fmtDate(entry.date)}\n`;
-  text+=`휴가자: ${entry.absences.map(a=>`${a.name}(${a.leaveType})`).join(', ')}\n\n`;
-  text+=`시간대\t\t\t휴가자\t\t대행자\n`;
+  text+=`휴가자: ${entry.absences.map(a=>`${a.name}(${a.leaveType==='외근'&&a.timeRange?'외근('+a.timeRange+')':a.leaveType})`).join(', ')}\n`;
+  if(isChaksin)text+=`착신: ✅ 착신완료\n`;
+  text+=`\n시간대\t\t\t휴가자\t\t대행자\n`;
   text+=`${'─'.repeat(36)}\n`;
   for(const a of sorted)text+=`${a.slotLabel}\t${a.absentee}\t${a.assignee}\n`;
   const ok=()=>showToast('슬랙 공유용 텍스트가 복사되었습니다!');
@@ -1281,9 +1283,12 @@ function copyChipSlack(name){
   const ab=absences.find(a=>a.name===name);
   if(!ab)return;
   const mine=[...assignments.filter(a=>a.absentee===name)].sort((a,b)=>startSlotOf(a)-startSlotOf(b));
+  const isChaksin=localStorage.getItem(`wca_chaksin_${date}`)==='1';
+  const leaveDisp=ab.leaveType==='외근'&&ab.timeRange?`외근(${ab.timeRange})`:ab.leaveType;
   let text=`📋 JK기업영업2팀 업무(자동누적)대행표 - ${fmtDate(date)}\n`;
-  text+=`휴가자: ${name}(${ab.leaveType})\n\n`;
-  text+=`시간대\t\t\t휴가자\t\t대행자\n`;
+  text+=`휴가자: ${name}(${leaveDisp})\n`;
+  if(isChaksin)text+=`착신: ✅ 착신완료\n`;
+  text+=`\n시간대\t\t\t휴가자\t\t대행자\n`;
   text+=`${'─'.repeat(36)}\n`;
   for(const a of mine)text+=`${a.slotLabel}\t${a.absentee}\t${a.assignee}\n`;
   const ok=()=>showToast('슬랙 공유용 텍스트가 복사되었습니다!');
@@ -1544,7 +1549,7 @@ function delFDEntry(id){
 const VT_BG={'연차휴가':'#fff0f0','오전연차':'#eff6ff','오후연차':'#fff7ed','오전반반차':'#f0fdf4','오후반반차':'#f5f3ff','건강검진':'#f0fdfa','회식':'#fef08a','외근':'#f0f9ff'};
 const VT_TC={'연차휴가':'#b91c1c','오전연차':'#1d4ed8','오후연차':'#c2410c','오전반반차':'#065f46','오후반반차':'#6d28d9','건강검진':'#0f766e','회식':'#78350f','외근':'#0369a1'};
 const VT_BD={'연차휴가':'#ef4444','오전연차':'#3b82f6','오후연차':'#f97316','오전반반차':'#10b981','오후반반차':'#8b5cf6','건강검진':'#14b8a6','회식':'#f59e0b','외근':'#0ea5e9'};
-const VT_SHORT={'연차휴가':'연차','오전연차':'오전연차','오후연차':'오후연차','오전반반차':'오전반반','오후반반차':'오후반반','건강검진':'건강검진','회식':'🍻회식','외근':'🚗외근'};
+const VT_SHORT={'연차휴가':'연차','오전연차':'오전연차','오후연차':'오후연차','오전반반차':'오전반반','오후반반차':'오후반반','건강검진':'건강검진','회식':'🍻회식','외근':'외근'};
 let _vcY,_vcM;
 
 function initVacCal(){
@@ -1579,7 +1584,7 @@ function renderVacCal(){
     if(isFull)cls+=' vcd-full';
     const dnCls='vcal-dn '+(isToday?'vdn-today':dw===0?'vdn-sun':dw===6?'vdn-sat':'vdn-wd');
     const holidayTag=holiday?`<div class="vcal-holiday">🎌 ${holiday}</div>`:'';
-    const erHtml=de.map(e=>{const typeLabel=e.leaveType==='외근'&&e.timeRange?`🚗 ${e.timeRange.replace(' ~ ','-')}`:VT_SHORT[e.leaveType]||e.leaveType;return`<div class="vcal-er${e.leaveType==='회식'?' vcal-er-hoesik':''}" style="background:${VT_BG[e.leaveType]||'#f8fafc'};border-left-color:${VT_BD[e.leaveType]||'#94a3b8'}">
+    const erHtml=de.map(e=>{const typeLabel=e.leaveType==='외근'&&e.timeRange?`외근 ${e.timeRange.replace(' ~ ','-')}`:VT_SHORT[e.leaveType]||e.leaveType;return`<div class="vcal-er${e.leaveType==='회식'?' vcal-er-hoesik':''}" style="background:${VT_BG[e.leaveType]||'#f8fafc'};border-left-color:${VT_BD[e.leaveType]||'#94a3b8'}">
       <span class="vcal-ename" style="color:${VT_TC[e.leaveType]||'#374151'}">${e.name}</span>
       <span class="vcal-etype" style="color:${VT_TC[e.leaveType]||'#5a6a7e'}">${typeLabel}</span>
       <div class="vcal-ebtns">
