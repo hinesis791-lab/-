@@ -267,6 +267,11 @@ tr.grp-sep td{border-top:2px solid #e0e9f7}
         <input type="hidden" id="dateInput">
         <div id="inlineCal"></div>
       </div>
+      <div style="margin-top:14px;padding:12px 14px;background:#f8fafd;border-radius:12px;border:1px solid #e8eef8">
+        <div style="font-size:10px;font-weight:800;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:.6px"><span id="teamChipsTitle">팀원 이번달 누적 현황</span></div>
+        <div id="teamChipsAvg" style="font-size:11px;color:#5a6a7e;margin-bottom:6px"></div>
+        <div id="teamChips" class="team-chips"></div>
+      </div>
       <div class="ab-block ab-block-1">
         <div class="ab-header"><span class="nb nb-1">1</span>휴가자 1</div>
         <div class="form-row">
@@ -296,11 +301,6 @@ tr.grp-sep td{border-top:2px solid #e0e9f7}
         </div>
       </div>
       <button class="btn btn-gen" onclick="generate()">▶ 업무대행표 생성</button>
-    </div>
-    <div class="card">
-      <div class="card-title"><span class="ctbar"></span><span id="teamChipsTitle">팀원 이번달 현황</span></div>
-      <div id="teamChipsAvg" style="font-size:11px;color:#5a6a7e;margin-bottom:6px"></div>
-      <div id="teamChips" class="team-chips"></div>
     </div>
   </div>
 
@@ -937,7 +937,7 @@ function renderTeamChips(sessHours){
   const curYM=`${_cy}-${String(_cm+1).padStart(2,'0')}`;
   const mh=(buildMonthlyData(d.history||[]))[curYM]||{};
   const titleEl=document.getElementById('teamChipsTitle');
-  if(titleEl)titleEl.textContent=`팀원 ${_cm+1}월 현황`;
+  if(titleEl)titleEl.textContent=`팀원 ${_cm+1}월 누적 현황`;
   const monthTotal=MEMBERS.reduce((s,m)=>s+(mh[m]||0),0);
   const hasData=monthTotal>0;
   const monthAvg=hasData?monthTotal/MEMBERS.length:0;
