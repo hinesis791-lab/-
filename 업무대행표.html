@@ -937,12 +937,12 @@ function renderTeamChips(sessHours){
   const curYM=`${_cy}-${String(_cm+1).padStart(2,'0')}`;
   const mh=(buildMonthlyData(d.history||[]))[curYM]||{};
   const titleEl=document.getElementById('teamChipsTitle');
-  if(titleEl)titleEl.textContent=`팀원 ${_cm+1}월 누적 현황`;
   const monthTotal=MEMBERS.reduce((s,m)=>s+(mh[m]||0),0);
   const hasData=monthTotal>0;
   const monthAvg=hasData?monthTotal/MEMBERS.length:0;
+  if(titleEl)titleEl.innerHTML=`팀원 ${_cm+1}월 누적 현황 <span style="text-transform:none;font-weight:500;font-size:9px;color:#94a3b8;letter-spacing:0">(평균 업무대행 수: ${monthAvg.toFixed(1)}h)</span>`;
   const avgEl=document.getElementById('teamChipsAvg');
-  if(avgEl)avgEl.innerHTML=`📋 평균 업무대행 수: <strong>${monthAvg.toFixed(1)}h</strong> &nbsp;·&nbsp; <span style="color:#dc2626;font-weight:600">➖ 팀 평균 미달</span> &nbsp; <span style="color:#059669;font-weight:600">➕ 팀 평균 이상</span>`;
+  if(avgEl)avgEl.innerHTML=`<span style="color:#dc2626;font-weight:600">➖ 팀 평균 미달</span> &nbsp; <span style="color:#059669;font-weight:600">➕ 팀 평균 이상</span>`;
   const settleAdj=(d.settleAdjustments||{})[curYM]||{};
   document.getElementById('teamChips').innerHTML=MEMBERS.map(m=>{
     const h=mh[m]||0,nh=sessHours?(sessHours[m]||0):0;
