@@ -536,7 +536,8 @@ function saveVac(d){
 
 // 오늘 이력이 있으면 '오늘의 대행표'에 표시 (세션 중 생성 건 덮어쓰지 않음)
 function showTodayCov(data){
-  const todayStr=new Date().toISOString().slice(0,10);
+  const _t=new Date();
+  const todayStr=`${_t.getFullYear()}-${String(_t.getMonth()+1).padStart(2,'0')}-${String(_t.getDate()).padStart(2,'0')}`;
   const entry=data.history.find(e=>e.date===todayStr);
   if(entry){
     _lastCov={date:entry.date,absences:entry.absences,assignments:entry.assignments,histId:entry.id};
@@ -862,7 +863,7 @@ function renderHistory(history){
   const groups={};
   for(const e of sorted){const ym=e.date.slice(0,7);if(!groups[ym])groups[ym]=[];groups[ym].push(e);}
   const curYM=`${_cy}-${String(_cm+1).padStart(2,'0')}`;
-  const todayStr=new Date().toISOString().slice(0,10);
+  const _td=new Date();const todayStr=`${_td.getFullYear()}-${String(_td.getMonth()+1).padStart(2,'0')}-${String(_td.getDate()).padStart(2,'0')}`;
   return Object.keys(groups).sort().reverse().map(ym=>{
     const entries=groups[ym];
     const[y,mo]=ym.split('-');
