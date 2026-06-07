@@ -520,14 +520,14 @@ function save(d){
   if(_dataRef)_dataRef.set(d).catch(()=>_fbStatus('⚠️ 저장 실패',false));
 }
 function loadFD(){
-  try{const d=localStorage.getItem(FK);if(d)return JSON.parse(d);}catch(e){}return[];
+  try{const d=localStorage.getItem(FK);if(d){const p=JSON.parse(d);return Array.isArray(p)?p:Object.values(p);}}catch(e){}return[];
 }
 function saveFD(d){
   localStorage.setItem(FK,JSON.stringify(d));
   if(_fdRef)_fdRef.set(d).catch(()=>{});
 }
 function loadVac(){
-  try{const d=localStorage.getItem(VK);if(d)return JSON.parse(d);}catch(e){}return[];
+  try{const d=localStorage.getItem(VK);if(d){const p=JSON.parse(d);return Array.isArray(p)?p:Object.values(p);}}catch(e){}return[];
 }
 function saveVac(d){
   localStorage.setItem(VK,JSON.stringify(d));
