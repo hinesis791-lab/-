@@ -343,6 +343,7 @@ function buildTable() {
   const tbody = document.getElementById('tbody');
   ORIGIN.forEach((m, i) => {
     const tr = document.createElement('tr');
+    tr.dataset.idx = i;
     tr.innerHTML = `
       <td><span id="rk-${i}" class="rbadge rn">—</span></td>
       <td class="name">${m.name}</td>
@@ -432,6 +433,12 @@ function updateAll() {
     bar.style.width      = Math.min(100, c.tot) + '%';
     bar.style.background = barClr(c.tot);
   });
+
+  // 종합달성률 내림차순으로 행 재정렬
+  const tbody = document.getElementById('tbody');
+  Array.from(tbody.querySelectorAll('tr'))
+    .sort((a, b) => totals[+b.dataset.idx] - totals[+a.dataset.idx])
+    .forEach(r => tbody.appendChild(r));
 
   // 요약 카드
   const avg  = totals.reduce((a, b) => a + b, 0) / totals.length;
