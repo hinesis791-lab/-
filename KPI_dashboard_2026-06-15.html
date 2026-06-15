@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JK기업영업2팀 KPI 종합달성률 대시보드</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #0f172a;
+  --surface:  #1e293b;
+  --surface2: #283548;
+  --border:   #334155;
+  --text:     #e2e8f0;
+  --muted:    #94a3b8;
+  --blue:     #3b82f6;
+  --green:    #22c55e;
+  --yellow:   #eab308;
+  --orange:   #f97316;
+  --red:      #ef4444;
+  --gold:     #f59e0b;
+}
+
+body {
+  font-family: 'Malgun Gothic', 'Segoe UI', Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ── 헤더 ─────────────────────────────────── */
+header {
+  background: linear-gradient(135deg, #0f2240 0%, #0f172a 100%);
+  border-bottom: 1px solid #1e3a5f;
+  padding: 20px 28px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.hdr-icon { font-size: 30px; flex-shrink: 0; }
+.hdr-title { font-size: 18px; font-weight: 700; color: #fff; }
+.hdr-meta  { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.hdr-badge {
+  margin-left: auto;
+  background: #1e3a5f;
+  border: 1px solid #2d5a8e;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 11px;
+  color: #93c5fd;
+  white-space: nowrap;
+}
+
+/* ── 메인 ─────────────────────────────────── */
+main { padding: 24px 28px; }
+
+/* ── 요약 카드 ────────────────────────────── */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.card-ico {
+  width: 46px; height: 46px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+}
+.ico-blue   { background: #1d4ed820; }
+.ico-green  { background: #16a34a20; }
+.ico-red    { background: #dc262620; }
+.card-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+.card-val   { font-size: 30px; font-weight: 700; line-height: 1; }
+.val-blue   { color: var(--blue); }
+.val-green  { color: var(--green); }
+.val-red    { color: var(--red); }
+
+/* ── 테이블 래퍼 ──────────────────────────── */
+.tbl-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow-x: auto;
+}
+table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+
+/* 그룹 헤더 */
+.grp-row th {
+  padding: 9px 10px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+  text-transform: uppercase;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+.grp-base   { background: transparent; }
+.grp-shinku { background: #1e3a5f18; color: #93c5fd; border-left: 2px solid #3b82f640; }
+.grp-bau    { background: #16a34a10; color: #86efac; border-left: 2px solid #22c55e40; }
+.grp-total  { background: #92400e18; color: #fcd34d; border-left: 2px solid #f59e0b40; }
+
+/* 서브 헤더 */
+.sub-row th {
+  padding: 9px 10px;
+  font-size: 10px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.3px;
+  text-align: right;
+  border-bottom: 2px solid var(--border);
+  background: var(--surface2);
+}
+.sub-row th:first-child,
+.sub-row th:nth-child(2) { text-align: center; }
+.bl-shinku { border-left: 2px solid #3b82f640; }
+.bl-bau    { border-left: 2px solid #22c55e40; }
+.bl-total  { border-left: 2px solid #f59e0b40; }
+
+/* 데이터 행 */
+tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: #ffffff07; }
+td { padding: 10px 10px; text-align: right; vertical-align: middle; }
+td:first-child  { text-align: center; }
+td.name { text-align: left; font-weight: 600; padding-left: 14px; }
+td.muted { color: var(--muted); }
+
+/* 보더 좌측 */
+td.bl-shinku { border-left: 2px solid #3b82f620; }
+td.bl-bau    { border-left: 2px solid #22c55e20; }
+td.bl-total  { border-left: 2px solid #f59e0b20; }
+
+/* 순위 뱃지 */
+.rbadge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 27px; height: 27px; border-radius: 50%;
+  font-weight: 700; font-size: 11px;
+}
+.r1 { background: #d97706; color: #fff; }
+.r2 { background: #64748b; color: #fff; }
+.r3 { background: #a16207; color: #fff; }
+.rn { background: var(--surface2); color: var(--muted); }
+
+/* 입력 셀 */
+input.act {
+  width: 112px; padding: 5px 8px;
+  background: #1a2744;
+  border: 1px solid #3b82f6;
+  border-radius: 6px;
+  color: #fff; font-size: 12px; font-family: inherit;
+  text-align: right; outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+input.act:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px #3b82f622;
+}
+
+/* 달성률 색상 */
+.c-gold   { color: var(--gold);   font-weight: 700; }
+.c-green  { color: var(--green);  font-weight: 600; }
+.c-yellow { color: var(--yellow); }
+.c-orange { color: var(--orange); }
+.c-red    { color: var(--red);    font-weight: 600; }
+
+/* 종합달성률 셀 */
+.tot-wrap { min-width: 112px; text-align: right; }
+.tot-pct  { font-size: 14px; font-weight: 700; margin-bottom: 5px; }
+.bar-bg   { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 2px; transition: width 0.35s ease, background 0.35s ease; }
+
+/* 공식 안내 */
+.footnote {
+  margin-top: 14px;
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.fn-note { font-size: 11px; color: var(--muted); }
+.fn-legend { display: flex; gap: 14px; font-size: 11px; color: var(--muted); }
+.fn-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 3px; vertical-align: middle; }
+
+/* 리셋 버튼 */
+.reset-btn {
+  margin-left: auto;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+}
+.reset-btn:hover { background: var(--border); color: var(--text); }
+
+@media (max-width: 900px) {
+  .cards { grid-template-columns: 1fr 1fr; }
+  main   { padding: 16px; }
+  header { padding: 14px 16px; }
+  .hdr-badge { display: none; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-icon">📊</div>
+  <div>
+    <div class="hdr-title">JK기업영업2팀 &nbsp;·&nbsp; KPI 종합달성률 대시보드</div>
+    <div class="hdr-meta">기준일: <strong style="color:#e2e8f0">2026-06-15</strong>&nbsp;&nbsp;|&nbsp;&nbsp;누적기간: 2026/06/01 ~ 06/14</div>
+  </div>
+  <div class="hdr-badge">신규 ×20%&nbsp;+&nbsp;BAU ×80%</div>
+</header>
+
+<main>
+  <div class="cards">
+    <div class="card">
+      <div class="card-ico ico-blue">📈</div>
+      <div>
+        <div class="card-label">팀 평균 달성률</div>
+        <div class="card-val val-blue" id="s-avg">—</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-ico ico-green">✅</div>
+      <div>
+        <div class="card-label">80% 이상 인원</div>
+        <div class="card-val val-green" id="s-good">—</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-ico ico-red">⚠️</div>
+      <div>
+        <div class="card-label">50% 미만 인원</div>
+        <div class="card-val val-red" id="s-bad">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr class="grp-row">
+          <th colspan="2" class="grp-base"></th>
+          <th colspan="5" class="grp-shinku">신규</th>
+          <th colspan="4" class="grp-bau">BAU</th>
+          <th colspan="1" class="grp-total">종합</th>
+        </tr>
+        <tr class="sub-row">
+          <th>순위</th>
+          <th>영업사원</th>
+          <th class="bl-shinku">목표</th>
+          <th>실적 ✏️</th>
+          <th>달성률</th>
+          <th>조정</th>
+          <th>가중</th>
+          <th class="bl-bau">목표</th>
+          <th>실적 ✏️</th>
+          <th>달성률</th>
+          <th>가중</th>
+          <th class="bl-total">달성률</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="footnote">
+    <div class="fn-note">✏️ 실적 셀 수정 후 <kbd style="background:var(--surface2);border:1px solid var(--border);padding:1px 5px;border-radius:3px">Enter</kbd> 또는 클릭아웃 시 자동 재계산</div>
+    <div class="fn-legend">
+      <span><span class="fn-dot" style="background:#f59e0b"></span>100%↑</span>
+      <span><span class="fn-dot" style="background:#22c55e"></span>80%↑</span>
+      <span><span class="fn-dot" style="background:#eab308"></span>60%↑</span>
+      <span><span class="fn-dot" style="background:#f97316"></span>50%↑</span>
+      <span><span class="fn-dot" style="background:#ef4444"></span>50%↓</span>
+    </div>
+    <button class="reset-btn" onclick="resetAll()">↺ 원본값으로 초기화</button>
+  </div>
+</main>
+
+<script>
+const TGT_SHINKU = 10559081;
+
+const ORIGIN = [
+  { name:'전혜숙', bau_tgt:51511393,  sa:2904864,   ba:39528426 },
+  { name:'이덕실', bau_tgt:53173109,  sa:11069807,  ba:21171283 },
+  { name:'허미남', bau_tgt:58108988,  sa:3201825,   ba:28596852 },
+  { name:'라현선', bau_tgt:66149992,  sa:2639985,   ba:19964786 },
+  { name:'이윤장', bau_tgt:81751168,  sa:5494438,   ba:17190809 },
+  { name:'채문정', bau_tgt:90947256,  sa:4252738,   ba:21076888 },
+  { name:'박신선', bau_tgt:57068864,  sa:2191450,   ba:5002729  },
+  { name:'박대석', bau_tgt:49711227,  sa:41367220,  ba:9795594  },
+  { name:'김경옥', bau_tgt:98075942,  sa:2327891,   ba:14509989 },
+  { name:'윤지연', bau_tgt:83274928,  sa:4630113,   ba:15948310 },
+  { name:'박경아', bau_tgt:115657930, sa:2991755,   ba:14519351 },
+];
+
+// 가변 실적 상태
+const state = ORIGIN.map(m => ({ sa: m.sa, ba: m.ba }));
+
+/* ── 계산 ────────────────────────────────── */
+function calc(i) {
+  const s = state[i], m = ORIGIN[i];
+  const sr = s.sa / TGT_SHINKU * 100;
+  const sadj = sr <= 100 ? sr : Math.min(200, 100 + (sr - 100) * 2);
+  const sw  = sadj * 0.2;
+  const br  = s.ba / m.bau_tgt * 100;
+  const bw  = br * 0.8;
+  return { sr, sadj, sw, br, bw, tot: sw + bw };
+}
+
+function cls(v) {
+  if (v >= 100) return 'c-gold';
+  if (v >= 80)  return 'c-green';
+  if (v >= 60)  return 'c-yellow';
+  if (v >= 50)  return 'c-orange';
+  return 'c-red';
+}
+function barClr(v) {
+  if (v >= 100) return '#f59e0b';
+  if (v >= 80)  return '#22c55e';
+  if (v >= 60)  return '#eab308';
+  if (v >= 50)  return '#f97316';
+  return '#ef4444';
+}
+function p(n)   { return n.toFixed(1) + '%'; }
+function fmt(n) { return Math.round(n).toLocaleString('ko-KR'); }
+
+/* ── 테이블 최초 생성 ────────────────────── */
+function buildTable() {
+  const tbody = document.getElementById('tbody');
+  ORIGIN.forEach((m, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span id="rk-${i}" class="rbadge rn">—</span></td>
+      <td class="name">${m.name}</td>
+      <td class="muted bl-shinku">${fmt(TGT_SHINKU)}</td>
+      <td><input id="si-${i}" class="act" type="text" inputmode="numeric" autocomplete="off" value="${fmt(m.sa)}"></td>
+      <td id="sr-${i}">—</td>
+      <td id="sa-${i}">—</td>
+      <td id="sw-${i}" class="muted">—</td>
+      <td class="muted bl-bau">${fmt(m.bau_tgt)}</td>
+      <td><input id="bi-${i}" class="act" type="text" inputmode="numeric" autocomplete="off" value="${fmt(m.ba)}"></td>
+      <td id="br-${i}">—</td>
+      <td id="bw-${i}" class="muted">—</td>
+      <td class="bl-total">
+        <div class="tot-wrap">
+          <div id="tt-${i}" class="tot-pct">—</div>
+          <div class="bar-bg"><div id="bar-${i}" class="bar-fill" style="width:0%"></div></div>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  ORIGIN.forEach((_, i) => {
+    const si = document.getElementById(`si-${i}`);
+    const bi = document.getElementById(`bi-${i}`);
+
+    // 포커스 시 콤마 제거 + 전체 선택
+    const onFocus = e => { e.target.value = e.target.value.replace(/,/g, ''); e.target.select(); };
+
+    // 블러 시 파싱 → 상태 갱신 → 재포맷 → 전체 재계산
+    const onBlur = (e, key) => {
+      const v = parseInt(e.target.value.replace(/,/g, ''), 10);
+      if (!isNaN(v) && v >= 0) {
+        state[i][key] = v;
+        e.target.value = fmt(v);
+      } else {
+        e.target.value = fmt(state[i][key]);
+      }
+      updateAll();
+    };
+
+    const onKey = e => { if (e.key === 'Enter') e.target.blur(); };
+
+    si.addEventListener('focus', onFocus);
+    bi.addEventListener('focus', onFocus);
+    si.addEventListener('blur', e => onBlur(e, 'sa'));
+    bi.addEventListener('blur', e => onBlur(e, 'ba'));
+    si.addEventListener('keydown', onKey);
+    bi.addEventListener('keydown', onKey);
+  });
+}
+
+/* ── 계산값 DOM 업데이트 (입력 셀 건드리지 않음) ── */
+function updateAll() {
+  const calcs  = ORIGIN.map((_, i) => calc(i));
+  const totals = calcs.map(c => c.tot);
+
+  // 순위 (동률 처리: 더 높은 tot 개수 + 1)
+  ORIGIN.forEach((_, i) => {
+    const rank = totals.filter(t => t > totals[i]).length + 1;
+    const el = document.getElementById(`rk-${i}`);
+    el.textContent = rank;
+    el.className   = 'rbadge ' + (rank === 1 ? 'r1' : rank === 2 ? 'r2' : rank === 3 ? 'r3' : 'rn');
+  });
+
+  // 각 행 셀 업데이트
+  ORIGIN.forEach((_, i) => {
+    const c = calcs[i];
+
+    const set = (id, val, colorVal) => {
+      const el = document.getElementById(id);
+      el.textContent = val;
+      if (colorVal !== undefined) el.className = cls(colorVal);
+    };
+
+    set(`sr-${i}`, p(c.sr),   c.sr);
+    set(`sa-${i}`, p(c.sadj), c.sadj);
+    document.getElementById(`sw-${i}`).textContent = p(c.sw);
+    set(`br-${i}`, p(c.br),   c.br);
+    document.getElementById(`bw-${i}`).textContent = p(c.bw);
+
+    const tt  = document.getElementById(`tt-${i}`);
+    tt.textContent = p(c.tot);
+    tt.className   = 'tot-pct ' + cls(c.tot);
+
+    const bar = document.getElementById(`bar-${i}`);
+    bar.style.width      = Math.min(100, c.tot) + '%';
+    bar.style.background = barClr(c.tot);
+  });
+
+  // 요약 카드
+  const avg  = totals.reduce((a, b) => a + b, 0) / totals.length;
+  const good = totals.filter(v => v >= 80).length;
+  const bad  = totals.filter(v => v <  50).length;
+
+  document.getElementById('s-avg').textContent  = p(avg);
+  document.getElementById('s-good').textContent = good + '명';
+  document.getElementById('s-bad').textContent  = bad  + '명';
+}
+
+/* ── 초기화 ──────────────────────────────── */
+function resetAll() {
+  ORIGIN.forEach((m, i) => {
+    state[i].sa = m.sa;
+    state[i].ba = m.ba;
+    document.getElementById(`si-${i}`).value = fmt(m.sa);
+    document.getElementById(`bi-${i}`).value = fmt(m.ba);
+  });
+  updateAll();
+}
+
+/* ── 초기 실행 ───────────────────────────── */
+buildTable();
+updateAll();
+</script>
+</body>
+</html>
