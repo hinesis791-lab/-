@@ -246,6 +246,12 @@ input.act:focus {
 }
 .undo-btn:disabled { opacity: 0.2; cursor: not-allowed; }
 
+/* 저장 상태 표시 */
+.save-status { font-size: 11px; transition: color 0.2s; }
+.save-status.saving { color: var(--yellow); }
+.save-status.saved  { color: var(--green); }
+.save-status.error  { color: var(--red); }
+
 @media (max-width: 900px) {
   .cards { grid-template-columns: 1fr 1fr; }
   main   { padding: 16px; }
@@ -333,10 +339,13 @@ input.act:focus {
       <span><span class="fn-dot" style="background:#f97316"></span>50%↑</span>
       <span><span class="fn-dot" style="background:#ef4444"></span>50%↓</span>
     </div>
+    <span id="save-status" class="save-status"></span>
     <button class="reset-btn" onclick="resetAll()">↺ 원본값으로 초기화</button>
   </div>
 </main>
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 const TGT_SHINKU = 10559081;
 
@@ -357,6 +366,7 @@ const ORIGIN = [
 // 가변 실적 상태
 const state     = ORIGIN.map(m => ({ sa: m.sa, ba: m.ba }));
 const prevState = ORIGIN.map(m => ({ sa: m.sa, ba: m.ba })); // 되돌리기용 직전값
+let focusedId = null; // 현재 포커스된 입력 셀 ID
 
 /* ── 계산 ────────────────────────────────── */
 function calc(i) {
@@ -421,18 +431,20 @@ function buildTable() {
     const si = document.getElementById(`si-${i}`);
     const bi = document.getElementById(`bi-${i}`);
 
-    // 포커스 시 콤마 제거 + 전체 선택
-    const onFocus = e => { e.target.value = e.target.value.replace(/,/g, ''); e.target.select(); };
+    // 포커스 시 focusedId 기록 + 콤마 제거 + 전체 선택
+    const onFocus = e => { focusedId = e.target.id; e.target.value = e.target.value.replace(/,/g, ''); e.target.select(); };
 
-    // 블러 시 파싱 → prevState 저장 → 상태 갱신 → 재포맷 → 전체 재계산
+    // 블러 시 focusedId 해제 → prevState 저장 → 상태 갱신 → Firebase 저장 → 재계산
     const onBlur = (e, key) => {
+      focusedId = null;
       const v = parseInt(e.target.value.replace(/,/g, ''), 10);
       if (!isNaN(v) && v >= 0) {
         if (v !== state[i][key]) {
-          prevState[i] = { sa: state[i].sa, ba: state[i].ba }; // 변경 전 저장
+          prevState[i] = { sa: state[i].sa, ba: state[i].ba };
+          state[i][key] = v;
+          saveActual(i); // Firebase 저장
         }
-        state[i][key] = v;
-        e.target.value = fmt(v);
+        e.target.value = fmt(state[i][key]);
       } else {
         e.target.value = fmt(state[i][key]);
       }
@@ -516,24 +528,108 @@ function undoRow(i) {
   document.getElementById(`bi-${i}`).value = fmt(prevState[i].ba);
   // 되돌린 후 prev = current (더 이상 undo 없음)
   prevState[i] = { sa: state[i].sa, ba: state[i].ba };
+  saveActual(i); // Firebase 저장
   updateAll();
 }
 
 /* ── 전체 초기화 ─────────────────────────── */
 function resetAll() {
+  const actuals = {};
   ORIGIN.forEach((m, i) => {
-    prevState[i] = { sa: state[i].sa, ba: state[i].ba }; // 현재값을 prev로 보존
+    prevState[i] = { sa: state[i].sa, ba: state[i].ba };
     state[i].sa = m.sa;
     state[i].ba = m.ba;
     document.getElementById(`si-${i}`).value = fmt(m.sa);
     document.getElementById(`bi-${i}`).value = fmt(m.ba);
+    actuals[m.name] = { sa: m.sa, ba: m.ba };
   });
+  setSaveStatus('saving');
+  kpiRef.child('actuals').set(actuals).then(() => setSaveStatus('saved'));
   updateAll();
+}
+
+/* ── Firebase 실시간 동기화 ──────────────── */
+const FB_CONFIG = {
+  apiKey:            "AIzaSyABNLmWfurhdaRA5cO-pVR4ad_89fjsU2w",
+  authDomain:        "jk-2-sales.firebaseapp.com",
+  databaseURL:       "https://jk-2-sales-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:         "jk-2-sales",
+  storageBucket:     "jk-2-sales.firebasestorage.app",
+  messagingSenderId: "735345282400",
+  appId:             "1:735345282400:web:dbd3b70bc42a8a67b5e205"
+};
+firebase.initializeApp(FB_CONFIG);
+const db     = firebase.database();
+const kpiRef = db.ref('kpi_dashboard');
+
+// 개별 실적 저장
+function saveActual(i) {
+  setSaveStatus('saving');
+  kpiRef.child('actuals').child(ORIGIN[i].name)
+    .set({ sa: state[i].sa, ba: state[i].ba })
+    .then(() => setSaveStatus('saved'))
+    .catch(() => setSaveStatus('error'));
+}
+
+// 기준일·누적기간 저장
+function saveMeta() {
+  const date   = document.getElementById('input-date').value.trim();
+  const period = document.getElementById('input-period').value.trim();
+  kpiRef.child('meta').set({ date, period });
+}
+
+// 저장 상태 UI
+function setSaveStatus(s) {
+  const el = document.getElementById('save-status');
+  if (s === 'saving') {
+    el.textContent = '저장 중...'; el.className = 'save-status saving';
+  } else if (s === 'saved') {
+    el.textContent = '✓ 저장됨'; el.className = 'save-status saved';
+    setTimeout(() => { el.textContent = ''; el.className = 'save-status'; }, 2000);
+  } else {
+    el.textContent = '저장 실패'; el.className = 'save-status error';
+  }
+}
+
+// Firebase → UI 반영 (포커스 중인 셀 제외)
+function applySnapshot(data) {
+  if (!data) return;
+  if (data.meta) {
+    const dateEl   = document.getElementById('input-date');
+    const periodEl = document.getElementById('input-period');
+    if (dateEl   && focusedId !== 'input-date')   dateEl.value   = data.meta.date   || dateEl.value;
+    if (periodEl && focusedId !== 'input-period') periodEl.value = data.meta.period || periodEl.value;
+  }
+  if (data.actuals) {
+    ORIGIN.forEach((m, i) => {
+      const saved = data.actuals[m.name];
+      if (!saved) return;
+      state[i].sa = saved.sa ?? m.sa;
+      state[i].ba = saved.ba ?? m.ba;
+      const siEl = document.getElementById(`si-${i}`);
+      const biEl = document.getElementById(`bi-${i}`);
+      if (siEl && focusedId !== `si-${i}`) siEl.value = fmt(state[i].sa);
+      if (biEl && focusedId !== `bi-${i}`) biEl.value = fmt(state[i].ba);
+    });
+  }
 }
 
 /* ── 초기 실행 ───────────────────────────── */
 buildTable();
-updateAll();
+
+// 헤더 입력 Firebase 연동
+['input-date', 'input-period'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('focus', () => { focusedId = id; });
+  el.addEventListener('blur',  () => { focusedId = null; saveMeta(); });
+});
+
+// 실시간 리스너 — 최초 로드 및 변경 감지
+kpiRef.on('value', snap => {
+  applySnapshot(snap.val());
+  updateAll();
+});
 </script>
+
 </body>
 </html>
