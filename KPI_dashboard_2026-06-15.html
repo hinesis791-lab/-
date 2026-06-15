@@ -252,6 +252,20 @@ input.act:focus {
 .save-status.saved  { color: var(--green); }
 .save-status.error  { color: var(--red); }
 
+/* 실시간 연결 표시 */
+.conn-badge {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--muted);
+  margin-left: 12px;
+}
+.conn-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #475569; flex-shrink: 0;
+  transition: background 0.4s;
+}
+.conn-badge.connected .conn-dot { background: var(--green); box-shadow: 0 0 6px #22c55e88; }
+.conn-badge.connected .conn-label { color: var(--green); }
+
 @media (max-width: 900px) {
   .cards { grid-template-columns: 1fr 1fr; }
   main   { padding: 16px; }
@@ -273,6 +287,10 @@ input.act:focus {
     </div>
   </div>
   <div class="hdr-badge">신규 ×20%&nbsp;+&nbsp;BAU ×80%</div>
+  <div class="conn-badge" id="conn-badge">
+    <div class="conn-dot"></div>
+    <span class="conn-label">연결 중...</span>
+  </div>
 </header>
 
 <main>
@@ -628,6 +646,19 @@ buildTable();
 kpiRef.on('value', snap => {
   applySnapshot(snap.val());
   updateAll();
+});
+
+// 연결 상태 표시
+db.ref('.info/connected').on('value', snap => {
+  const badge = document.getElementById('conn-badge');
+  const label = badge.querySelector('.conn-label');
+  if (snap.val()) {
+    badge.classList.add('connected');
+    label.textContent = '실시간 연결됨';
+  } else {
+    badge.classList.remove('connected');
+    label.textContent = '연결 끊김';
+  }
 });
 </script>
 
