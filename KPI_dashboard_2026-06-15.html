@@ -205,6 +205,26 @@ input.act:focus {
 }
 .reset-btn:hover { background: var(--border); color: var(--text); }
 
+/* 되돌리기 버튼 */
+.undo-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 5px;
+  padding: 4px 9px;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  line-height: 1;
+}
+.undo-btn:hover:not(:disabled) {
+  background: #2d1f0820;
+  color: var(--yellow);
+  border-color: var(--yellow);
+}
+.undo-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+
 @media (max-width: 900px) {
   .cards { grid-template-columns: 1fr 1fr; }
   main   { padding: 16px; }
@@ -257,6 +277,7 @@ input.act:focus {
           <th colspan="5" class="grp-shinku">신규</th>
           <th colspan="4" class="grp-bau">BAU</th>
           <th colspan="1" class="grp-total">종합</th>
+          <th class="grp-base"></th>
         </tr>
         <tr class="sub-row">
           <th>순위</th>
@@ -271,6 +292,7 @@ input.act:focus {
           <th>달성률</th>
           <th>가중</th>
           <th class="bl-total">달성률</th>
+          <th style="text-align:center">되돌리기</th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
@@ -308,7 +330,8 @@ const ORIGIN = [
 ];
 
 // 가변 실적 상태
-const state = ORIGIN.map(m => ({ sa: m.sa, ba: m.ba }));
+const state     = ORIGIN.map(m => ({ sa: m.sa, ba: m.ba }));
+const prevState = ORIGIN.map(m => ({ sa: m.sa, ba: m.ba })); // 되돌리기용 직전값
 
 /* ── 계산 ────────────────────────────────── */
 function calc(i) {
@@ -362,6 +385,9 @@ function buildTable() {
           <div class="bar-bg"><div id="bar-${i}" class="bar-fill" style="width:0%"></div></div>
         </div>
       </td>
+      <td style="text-align:center">
+        <button id="undo-${i}" class="undo-btn" onclick="undoRow(${i})" disabled title="직전 값으로 되돌리기">↩</button>
+      </td>
     `;
     tbody.appendChild(tr);
   });
@@ -373,10 +399,13 @@ function buildTable() {
     // 포커스 시 콤마 제거 + 전체 선택
     const onFocus = e => { e.target.value = e.target.value.replace(/,/g, ''); e.target.select(); };
 
-    // 블러 시 파싱 → 상태 갱신 → 재포맷 → 전체 재계산
+    // 블러 시 파싱 → prevState 저장 → 상태 갱신 → 재포맷 → 전체 재계산
     const onBlur = (e, key) => {
       const v = parseInt(e.target.value.replace(/,/g, ''), 10);
       if (!isNaN(v) && v >= 0) {
+        if (v !== state[i][key]) {
+          prevState[i] = { sa: state[i].sa, ba: state[i].ba }; // 변경 전 저장
+        }
         state[i][key] = v;
         e.target.value = fmt(v);
       } else {
@@ -432,6 +461,10 @@ function updateAll() {
     const bar = document.getElementById(`bar-${i}`);
     bar.style.width      = Math.min(100, c.tot) + '%';
     bar.style.background = barClr(c.tot);
+
+    // 되돌리기 버튼: 직전값과 현재값이 다를 때만 활성화
+    const changed = state[i].sa !== prevState[i].sa || state[i].ba !== prevState[i].ba;
+    document.getElementById(`undo-${i}`).disabled = !changed;
   });
 
   // 종합달성률 내림차순으로 행 재정렬
@@ -450,9 +483,21 @@ function updateAll() {
   document.getElementById('s-bad').textContent  = bad  + '명';
 }
 
-/* ── 초기화 ──────────────────────────────── */
+/* ── 되돌리기 (행별 1단계 undo) ─────────── */
+function undoRow(i) {
+  state[i].sa = prevState[i].sa;
+  state[i].ba = prevState[i].ba;
+  document.getElementById(`si-${i}`).value = fmt(prevState[i].sa);
+  document.getElementById(`bi-${i}`).value = fmt(prevState[i].ba);
+  // 되돌린 후 prev = current (더 이상 undo 없음)
+  prevState[i] = { sa: state[i].sa, ba: state[i].ba };
+  updateAll();
+}
+
+/* ── 전체 초기화 ─────────────────────────── */
 function resetAll() {
   ORIGIN.forEach((m, i) => {
+    prevState[i] = { sa: state[i].sa, ba: state[i].ba }; // 현재값을 prev로 보존
     state[i].sa = m.sa;
     state[i].ba = m.ba;
     document.getElementById(`si-${i}`).value = fmt(m.sa);
