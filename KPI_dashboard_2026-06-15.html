@@ -54,6 +54,27 @@ header {
   white-space: nowrap;
 }
 
+/* 헤더 인라인 입력 */
+.hdr-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px dashed #4a6a8a;
+  color: #e2e8f0;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 600;
+  outline: none;
+  padding: 1px 4px;
+  transition: border-color 0.15s, background 0.15s;
+  min-width: 80px;
+}
+.hdr-input:hover { border-bottom-color: #60a5fa; }
+.hdr-input:focus {
+  background: #1e3a5f55;
+  border-bottom-color: #60a5fa;
+  border-radius: 3px 3px 0 0;
+}
+
 /* ── 메인 ─────────────────────────────────── */
 main { padding: 24px 28px; }
 
@@ -239,7 +260,11 @@ input.act:focus {
   <div class="hdr-icon">📊</div>
   <div>
     <div class="hdr-title">JK기업영업2팀 &nbsp;·&nbsp; KPI 종합달성률 대시보드</div>
-    <div class="hdr-meta">기준일: <strong style="color:#e2e8f0">2026-06-15</strong>&nbsp;&nbsp;|&nbsp;&nbsp;누적기간: 2026/06/01 ~ 06/14</div>
+    <div class="hdr-meta">
+      기준일: <input class="hdr-input" id="input-date" value="2026-06-15" size="10">
+      &nbsp;&nbsp;|&nbsp;&nbsp;
+      누적기간: <input class="hdr-input" id="input-period" value="2026/06/01 ~ 06/14" size="18">
+    </div>
   </div>
   <div class="hdr-badge">신규 ×20%&nbsp;+&nbsp;BAU ×80%</div>
 </header>
