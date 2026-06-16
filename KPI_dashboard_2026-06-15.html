@@ -305,7 +305,7 @@ input.act:focus {
     <div class="card">
       <div class="card-ico ico-green">✅</div>
       <div>
-        <div class="card-label">80% 이상 인원</div>
+        <div class="card-label">90% 이상 인원</div>
         <div class="card-val val-green" id="s-good">—</div>
       </div>
     </div>
@@ -530,7 +530,7 @@ function updateAll() {
 
   // 요약 카드
   const avg  = totals.reduce((a, b) => a + b, 0) / totals.length;
-  const good = totals.filter(v => v >= 80).length;
+  const good = totals.filter(v => v >= 90).length;
   const bad  = totals.filter(v => v <  50).length;
 
   document.getElementById('s-avg').textContent  = p(avg);
